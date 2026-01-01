@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
-import { dithers } from "@/lib/db/schema";
+import { dithers, type Visibility } from "@/lib/db/schema";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { DitherView } from "./dither-view";
@@ -19,12 +21,26 @@ export default async function DitherPage({ params }: DitherPageProps) {
     notFound();
   }
 
+  // Check if user can view this dither
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const isOwner = session?.user?.id === dither.userId;
+
+  // If private and not owner, show not found
+  if (dither.visibility === "private" && !isOwner) {
+    notFound();
+  }
+
   return (
     <DitherView
       id={dither.id}
       imageUrl={dither.imageUrl}
       title={dither.title}
       prompt={dither.prompt}
+      visibility={dither.visibility as Visibility}
+      isOwner={isOwner}
     />
   );
 }

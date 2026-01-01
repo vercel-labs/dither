@@ -52,6 +52,10 @@ export const verifications = pgTable("verifications", {
   updatedAt: timestamp("updated_at"),
 });
 
+// Visibility options for dithers
+export const VISIBILITY_OPTIONS = ["private", "public"] as const;
+export type Visibility = (typeof VISIBILITY_OPTIONS)[number];
+
 // Application tables
 export const dithers = pgTable("dithers", {
   id: text("id")
@@ -63,6 +67,7 @@ export const dithers = pgTable("dithers", {
   title: text("title"),
   prompt: text("prompt"),
   imageUrl: text("image_url"),
+  visibility: text("visibility").notNull().default("private"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

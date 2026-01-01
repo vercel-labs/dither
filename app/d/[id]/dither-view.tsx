@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { applyDither } from "@/lib/dither";
 import {
@@ -15,12 +15,16 @@ import {
 import { Header } from "@/components/header";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
+import { Globe, Lock } from "lucide-react";
+import type { Visibility } from "@/lib/db/schema";
 
 interface DitherViewProps {
   id: string;
   imageUrl: string;
   title: string | null;
   prompt: string | null;
+  visibility: Visibility;
+  isOwner: boolean;
 }
 
 export function DitherView({
@@ -28,6 +32,8 @@ export function DitherView({
   imageUrl,
   title,
   prompt: initialPrompt,
+  visibility: initialVisibility,
+  isOwner,
 }: DitherViewProps) {
   // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
@@ -37,6 +43,10 @@ export function DitherView({
   const setIsProcessing = useSetAtom(isProcessingAtom);
   const setPrompt = useSetAtom(promptAtom);
   const resetOptions = useSetAtom(resetOptionsAtom);
+
+  // Visibility state
+  const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -119,6 +129,32 @@ export function DitherView({
     handleDownload();
   }, [handleDownload]);
 
+  const handleVisibilityChange = useCallback(
+    async (newVisibility: Visibility) => {
+      if (!isOwner || isUpdatingVisibility) return;
+
+      setIsUpdatingVisibility(true);
+      try {
+        const response = await fetch(`/api/dithers/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visibility: newVisibility }),
+        });
+
+        if (response.ok) {
+          setVisibility(newVisibility);
+        } else {
+          console.error("Failed to update visibility");
+        }
+      } catch (error) {
+        console.error("Error updating visibility:", error);
+      } finally {
+        setIsUpdatingVisibility(false);
+      }
+    },
+    [id, isOwner, isUpdatingVisibility],
+  );
+
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
@@ -128,11 +164,45 @@ export function DitherView({
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden">
-          {title && (
-            <h1 className="text-lg sm:text-xl tracking-wide mb-4 text-center">
-              {title}
-            </h1>
-          )}
+          <div className="flex items-center gap-3 mb-4">
+            {title && (
+              <h1 className="text-lg sm:text-xl tracking-wide text-center">
+                {title}
+              </h1>
+            )}
+            {/* Visibility indicator/toggle */}
+            {isOwner ? (
+              <button
+                onClick={() =>
+                  handleVisibilityChange(
+                    visibility === "private" ? "public" : "private",
+                  )
+                }
+                disabled={isUpdatingVisibility}
+                className="flex items-center gap-1.5 text-[10px] text-black/40 hover:text-black transition-colors disabled:opacity-50"
+                title={
+                  visibility === "private" ? "Make public" : "Make private"
+                }
+              >
+                {visibility === "private" ? (
+                  <>
+                    <Lock className="w-3 h-3" />
+                    <span>Private</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-3 h-3" />
+                    <span>Public</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[10px] text-black/40">
+                <Globe className="w-3 h-3" />
+                <span>Public</span>
+              </div>
+            )}
+          </div>
           <ImagePreview />
         </div>
 
