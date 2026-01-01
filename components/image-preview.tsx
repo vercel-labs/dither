@@ -16,7 +16,7 @@ export function ImagePreview() {
   const originalDataUrl = useAtomValue(originalDataUrlAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
 
-  const src = processedDataUrl || originalDataUrl || "";
+  const src = processedDataUrl || originalDataUrl;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -268,17 +268,19 @@ export function ImagePreview() {
           <span className="text-[10px] text-black/40">Processing...</span>
         </div>
       )}
-      <img
-        src={src}
-        alt="Dithered"
-        className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none"
-        draggable={false}
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          cursor: zoom > 1 ? (isPanning ? "grabbing" : "grab") : "default",
-          transition: isPanning ? "none" : "transform 0.1s ease-out",
-        }}
-      />
+      {src && (
+        <img
+          src={src}
+          alt="Dithered"
+          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none"
+          draggable={false}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            cursor: zoom > 1 ? (isPanning ? "grabbing" : "grab") : "default",
+            transition: isPanning ? "none" : "transform 0.1s ease-out",
+          }}
+        />
+      )}
       {/* Zoom indicator */}
       {zoom !== 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none">

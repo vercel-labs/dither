@@ -179,7 +179,11 @@ const PROVIDER_NAMES: Record<string, string> = {
   vercel: "Vercel",
 };
 
-export function Header() {
+interface HeaderProps {
+  title?: string | null;
+}
+
+export function Header({ title }: HeaderProps = {}) {
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
   const { data: session, isPending } = useSession();
@@ -232,14 +236,22 @@ export function Header() {
   return (
     <header className="h-14 border-b border-black/10 shrink-0">
       <div className="px-4 sm:px-8 h-full flex items-center justify-between">
-        <a
-          href="/"
-          className="text-xs tracking-[0.3em] hover:text-black/60 transition-colors"
-        >
-          Dither
-        </a>
+        <div className="flex items-center gap-3 min-w-0">
+          <a
+            href="/"
+            className="text-xs tracking-[0.3em] hover:text-black/60 transition-colors shrink-0"
+          >
+            Dither
+          </a>
+          {title && (
+            <>
+              <span className="text-black/20">/</span>
+              <span className="text-xs text-black/60 truncate">{title}</span>
+            </>
+          )}
+        </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           <a
             href="https://github.com/vercel-labs/dither"
             target="_blank"

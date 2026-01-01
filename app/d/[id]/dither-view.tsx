@@ -159,18 +159,13 @@ export function DitherView({
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
 
-      <Header />
+      <Header title={title} />
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="flex items-center gap-3 mb-4">
-            {title && (
-              <h1 className="text-lg sm:text-xl tracking-wide text-center">
-                {title}
-              </h1>
-            )}
-            {/* Visibility indicator/toggle */}
+          {/* Visibility indicator/toggle */}
+          <div className="mb-4">
             {isOwner ? (
               <button
                 onClick={() =>

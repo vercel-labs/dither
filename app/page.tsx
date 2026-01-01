@@ -15,18 +15,13 @@ import {
   isProcessingAtom,
   isSavingAtom,
   promptAtom,
-  hasImageAtom,
-  canDownloadAtom,
-  canSaveAtom,
   resetImageAtom,
-  resetOptionsAtom,
 } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { ModeToggle } from "@/components/mode-toggle";
 import { UploadArea } from "@/components/upload-area";
 import { GenerateArea } from "@/components/generate-area";
-import { ImagePreview } from "@/components/image-preview";
-import { ControlsPanel } from "@/components/controls-panel";
+import { DitherGallery } from "@/components/dither-gallery";
 
 export default function Home() {
   const router = useRouter();
@@ -34,21 +29,17 @@ export default function Home() {
   // Atoms
   const user = useAtomValue(userAtom);
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
-  const [originalDataUrl, setOriginalDataUrl] = useAtom(originalDataUrlAtom);
+  const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
   const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
-  const [options, setOptions] = useAtom(ditherOptionsAtom);
+  const options = useAtomValue(ditherOptionsAtom);
   const inputMode = useAtomValue(inputModeAtom);
   const [isProcessing, setIsProcessing] = useAtom(isProcessingAtom);
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const [prompt, setPrompt] = useAtom(promptAtom);
-  const hasImage = useAtomValue(hasImageAtom);
-  const canDownload = useAtomValue(canDownloadAtom);
-  const canSave = useAtomValue(canSaveAtom);
   const resetImage = useSetAtom(resetImageAtom);
-  const resetOptions = useSetAtom(resetOptionsAtom);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isNewImageRef = useRef(false); // Track if we just loaded a new image
+  const isNewImageRef = useRef(false);
 
   const processImage = useCallback(
     (img: HTMLImageElement, opts: typeof options) => {
@@ -88,7 +79,7 @@ export default function Home() {
       return;
 
     const autoSave = async () => {
-      isNewImageRef.current = false; // Reset flag before saving
+      isNewImageRef.current = false;
       setIsSaving(true);
       const id = generateId();
 
@@ -108,21 +99,32 @@ export default function Home() {
           throw new Error(data.error || "Failed to save dither");
         }
 
+        // Reset state before navigating
+        resetImage();
         router.push(`/d/${id}`);
       } catch (error) {
         console.error("Error auto-saving dither:", error);
         setIsSaving(false);
+        resetImage();
       }
     };
 
     autoSave();
-  }, [processedDataUrl, user, prompt, router, setIsSaving, isSaving]);
+  }, [
+    processedDataUrl,
+    user,
+    prompt,
+    router,
+    setIsSaving,
+    isSaving,
+    resetImage,
+  ]);
 
   const handleFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) return;
 
-      isNewImageRef.current = true; // Mark as new image for auto-save
+      isNewImageRef.current = true;
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -140,7 +142,7 @@ export default function Home() {
 
   const handleImageUrl = useCallback(
     (url: string, promptText?: string) => {
-      isNewImageRef.current = true; // Mark as new image for auto-save
+      isNewImageRef.current = true;
 
       setOriginalDataUrl(url);
       if (promptText) setPrompt(promptText);
@@ -153,46 +155,7 @@ export default function Home() {
     [setOriginalDataUrl, setOriginalImage, setPrompt],
   );
 
-  const handleDownload = useCallback(() => {
-    if (!processedDataUrl) return;
-    const link = document.createElement("a");
-    link.download = "dithered.png";
-    link.href = processedDataUrl;
-    link.click();
-  }, [processedDataUrl]);
-
-  const handleReset = useCallback(() => {
-    resetImage();
-  }, [resetImage]);
-
-  const handleSave = useCallback(async () => {
-    if (!processedDataUrl || !user) return;
-
-    setIsSaving(true);
-    const id = generateId();
-
-    try {
-      const response = await fetch("/api/dithers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          prompt,
-          imageData: processedDataUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save dither");
-      }
-
-      router.push(`/d/${id}`);
-    } catch (error) {
-      console.error("Error saving dither:", error);
-      setIsSaving(false);
-    }
-  }, [processedDataUrl, user, prompt, router, setIsSaving]);
+  const isWorking = isProcessing || isSaving;
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
@@ -200,33 +163,38 @@ export default function Home() {
 
       <Header />
 
-      <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-        {/* Main Panel */}
-        <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          {!hasImage ? (
-            <div className="w-full max-w-lg flex flex-col items-center">
-              <ModeToggle />
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        {/* Upload/Generate Area */}
+        <div className="flex items-center justify-center p-4 sm:p-8 pt-8 sm:pt-12">
+          <div className="w-full max-w-lg flex flex-col items-center">
+            <ModeToggle />
 
-              <div className="w-full h-[280px] sm:h-[320px] flex flex-col">
-                {inputMode === "upload" ? (
-                  <UploadArea onFileSelect={handleFile} />
-                ) : (
-                  <GenerateArea onImageGenerated={handleImageUrl} />
-                )}
-              </div>
+            <div className="w-full h-[280px] sm:h-[320px] flex flex-col relative">
+              {inputMode === "upload" ? (
+                <UploadArea onFileSelect={handleFile} disabled={isWorking} />
+              ) : (
+                <GenerateArea onImageGenerated={handleImageUrl} />
+              )}
+
+              {/* Processing/Saving overlay */}
+              {isWorking && (
+                <div className="absolute inset-0 bg-[#fafafa]/90 flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-6 h-6 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
+                    <span className="text-xs text-black/60">
+                      {isProcessing ? "Processing..." : "Saving..."}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <ImagePreview />
-          )}
+          </div>
         </div>
 
-        {/* Controls Panel */}
-        <ControlsPanel
-          onDownload={handleDownload}
-          onSave={handleSave}
-          onReset={handleReset}
-          onResetSettings={resetOptions}
-        />
+        {/* Gallery Section */}
+        <div className="px-4 sm:px-8 pb-8">
+          <DitherGallery />
+        </div>
       </main>
     </div>
   );

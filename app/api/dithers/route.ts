@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { dithers } from "@/lib/db/schema";
+import { dithers, users } from "@/lib/db/schema";
 import { uploadImage } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -8,6 +8,7 @@ import {
   generateTitleFromPrompt,
   generateTitleFromImage,
 } from "@/lib/generate-title";
+import { eq, or, desc } from "drizzle-orm";
 
 export async function POST(request: Request) {
   try {
@@ -62,6 +63,56 @@ export async function POST(request: Request) {
       {
         error: `Failed to create dither: ${error instanceof Error ? error.message : "Unknown error"}`,
       },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    const userId = session?.user?.id;
+
+    // Build where clause: public dithers OR user's own dithers (if signed in)
+    const whereClause = userId
+      ? or(eq(dithers.visibility, "public"), eq(dithers.userId, userId))
+      : eq(dithers.visibility, "public");
+
+    // Fetch dithers with user info
+    const results = await db
+      .select({
+        id: dithers.id,
+        title: dithers.title,
+        imageUrl: dithers.imageUrl,
+        visibility: dithers.visibility,
+        createdAt: dithers.createdAt,
+        userId: dithers.userId,
+        userName: users.name,
+        userImage: users.image,
+      })
+      .from(dithers)
+      .leftJoin(users, eq(dithers.userId, users.id))
+      .where(whereClause)
+      .orderBy(desc(dithers.createdAt))
+      .limit(50);
+
+    // Separate into user's dithers and public dithers
+    const myDithers = userId ? results.filter((d) => d.userId === userId) : [];
+    const publicDithers = results.filter(
+      (d) => d.visibility === "public" && d.userId !== userId,
+    );
+
+    return NextResponse.json({
+      myDithers,
+      publicDithers,
+    });
+  } catch (error) {
+    console.error("Error fetching dithers:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch dithers" },
       { status: 500 },
     );
   }
