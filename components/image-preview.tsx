@@ -1,11 +1,19 @@
 "use client";
 
-interface ImagePreviewProps {
-  src: string;
-  isProcessing: boolean;
-}
+import { useAtomValue } from "jotai";
+import {
+  processedDataUrlAtom,
+  originalDataUrlAtom,
+  isProcessingAtom,
+} from "@/lib/atoms";
 
-export function ImagePreview({ src, isProcessing }: ImagePreviewProps) {
+export function ImagePreview() {
+  const processedDataUrl = useAtomValue(processedDataUrlAtom);
+  const originalDataUrl = useAtomValue(originalDataUrlAtom);
+  const isProcessing = useAtomValue(isProcessingAtom);
+
+  const src = processedDataUrl || originalDataUrl || "";
+
   return (
     <div className="relative w-full h-full min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
       {isProcessing && (

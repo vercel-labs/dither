@@ -1,7 +1,16 @@
 "use client";
 
+import { useAtom, useAtomValue } from "jotai";
 import { Slider } from "./slider";
-import type { DitherOptions, DitherAlgorithm } from "@/lib/dither";
+import type { DitherAlgorithm } from "@/lib/dither";
+import {
+  ditherOptionsAtom,
+  hasImageAtom,
+  canDownloadAtom,
+  canSaveAtom,
+  isSavingAtom,
+  showThresholdAtom,
+} from "@/lib/atoms";
 
 const algorithms: { value: DitherAlgorithm; label: string }[] = [
   { value: "floyd-steinberg", label: "FLOYD-STEINBERG" },
@@ -12,33 +21,26 @@ const algorithms: { value: DitherAlgorithm; label: string }[] = [
 ];
 
 interface ControlsPanelProps {
-  options: DitherOptions;
-  onOptionsChange: (options: DitherOptions) => void;
   onDownload: () => void;
   onSave: () => void;
+  onReset: () => void;
   onResetSettings: () => void;
-  canDownload: boolean;
-  canSave: boolean;
-  isSaving: boolean;
-  visible: boolean;
 }
 
 export function ControlsPanel({
-  options,
-  onOptionsChange,
   onDownload,
   onSave,
+  onReset,
   onResetSettings,
-  canDownload,
-  canSave,
-  isSaving,
-  visible,
 }: ControlsPanelProps) {
-  const showThreshold = ["floyd-steinberg", "atkinson", "threshold"].includes(
-    options.algorithm,
-  );
+  const [options, setOptions] = useAtom(ditherOptionsAtom);
+  const hasImage = useAtomValue(hasImageAtom);
+  const canDownload = useAtomValue(canDownloadAtom);
+  const canSave = useAtomValue(canSaveAtom);
+  const isSaving = useAtomValue(isSavingAtom);
+  const showThreshold = useAtomValue(showThresholdAtom);
 
-  if (!visible) return null;
+  if (!hasImage) return null;
 
   return (
     <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-black/10 p-4 sm:p-8 flex-shrink-0">
@@ -54,7 +56,7 @@ export function ControlsPanel({
               <button
                 key={algo.value}
                 onClick={() =>
-                  onOptionsChange({ ...options, algorithm: algo.value })
+                  setOptions({ ...options, algorithm: algo.value })
                 }
                 className={`flex-shrink-0 text-[10px] tracking-[0.15em] uppercase px-3 py-2 border transition-colors ${
                   options.algorithm === algo.value
@@ -74,7 +76,7 @@ export function ControlsPanel({
             <Slider
               label="Threshold"
               value={options.threshold}
-              onChange={(v) => onOptionsChange({ ...options, threshold: v })}
+              onChange={(v) => setOptions({ ...options, threshold: v })}
               min={0}
               max={255}
             />
@@ -83,7 +85,7 @@ export function ControlsPanel({
           <Slider
             label="Contrast"
             value={options.contrast}
-            onChange={(v) => onOptionsChange({ ...options, contrast: v })}
+            onChange={(v) => setOptions({ ...options, contrast: v })}
             min={0.5}
             max={2}
             step={0.05}
@@ -93,7 +95,7 @@ export function ControlsPanel({
           <Slider
             label="Brightness"
             value={options.brightness}
-            onChange={(v) => onOptionsChange({ ...options, brightness: v })}
+            onChange={(v) => setOptions({ ...options, brightness: v })}
             min={-100}
             max={100}
           />
@@ -101,7 +103,7 @@ export function ControlsPanel({
           <Slider
             label="Scale"
             value={options.scale}
-            onChange={(v) => onOptionsChange({ ...options, scale: v })}
+            onChange={(v) => setOptions({ ...options, scale: v })}
             min={1}
             max={8}
             formatValue={(v) => `${v}×`}
@@ -150,7 +152,7 @@ export function ControlsPanel({
                 <button
                   key={algo.value}
                   onClick={() =>
-                    onOptionsChange({ ...options, algorithm: algo.value })
+                    setOptions({ ...options, algorithm: algo.value })
                   }
                   className={`block w-full text-left text-xs tracking-[0.15em] py-2 transition-colors ${
                     options.algorithm === algo.value
@@ -170,7 +172,7 @@ export function ControlsPanel({
               <Slider
                 label="Threshold"
                 value={options.threshold}
-                onChange={(v) => onOptionsChange({ ...options, threshold: v })}
+                onChange={(v) => setOptions({ ...options, threshold: v })}
                 min={0}
                 max={255}
               />
@@ -179,7 +181,7 @@ export function ControlsPanel({
             <Slider
               label="Contrast"
               value={options.contrast}
-              onChange={(v) => onOptionsChange({ ...options, contrast: v })}
+              onChange={(v) => setOptions({ ...options, contrast: v })}
               min={0.5}
               max={2}
               step={0.05}
@@ -189,7 +191,7 @@ export function ControlsPanel({
             <Slider
               label="Brightness"
               value={options.brightness}
-              onChange={(v) => onOptionsChange({ ...options, brightness: v })}
+              onChange={(v) => setOptions({ ...options, brightness: v })}
               min={-100}
               max={100}
             />
@@ -197,7 +199,7 @@ export function ControlsPanel({
             <Slider
               label="Scale"
               value={options.scale}
-              onChange={(v) => onOptionsChange({ ...options, scale: v })}
+              onChange={(v) => setOptions({ ...options, scale: v })}
               min={1}
               max={8}
               formatValue={(v) => `${v}×`}

@@ -1,35 +1,56 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { applyDither, defaultOptions, type DitherOptions } from "@/lib/dither";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { applyDither } from "@/lib/dither";
 import { generateId } from "@/lib/id";
+import {
+  userAtom,
+  originalImageAtom,
+  originalDataUrlAtom,
+  processedDataUrlAtom,
+  ditherOptionsAtom,
+  inputModeAtom,
+  isProcessingAtom,
+  isSavingAtom,
+  promptAtom,
+  hasImageAtom,
+  canDownloadAtom,
+  canSaveAtom,
+  resetImageAtom,
+  resetOptionsAtom,
+} from "@/lib/atoms";
 import { Header } from "@/components/header";
-import { ModeToggle, type InputMode } from "@/components/mode-toggle";
+import { ModeToggle } from "@/components/mode-toggle";
 import { UploadArea } from "@/components/upload-area";
 import { GenerateArea } from "@/components/generate-area";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
-import { useApp } from "@/components/app-provider";
 
 export default function Home() {
   const router = useRouter();
-  const { user } = useApp();
-  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
-    null,
-  );
-  const [originalDataUrl, setOriginalDataUrl] = useState<string | null>(null);
-  const [processedDataUrl, setProcessedDataUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [options, setOptions] = useState<DitherOptions>(defaultOptions);
-  const [inputMode, setInputMode] = useState<InputMode>("upload");
-  const [prompt, setPrompt] = useState<string | null>(null);
+
+  // Atoms
+  const user = useAtomValue(userAtom);
+  const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
+  const [originalDataUrl, setOriginalDataUrl] = useAtom(originalDataUrlAtom);
+  const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
+  const [options, setOptions] = useAtom(ditherOptionsAtom);
+  const inputMode = useAtomValue(inputModeAtom);
+  const [isProcessing, setIsProcessing] = useAtom(isProcessingAtom);
+  const [isSaving, setIsSaving] = useAtom(isSavingAtom);
+  const [prompt, setPrompt] = useAtom(promptAtom);
+  const hasImage = useAtomValue(hasImageAtom);
+  const canDownload = useAtomValue(canDownloadAtom);
+  const canSave = useAtomValue(canSaveAtom);
+  const resetImage = useSetAtom(resetImageAtom);
+  const resetOptions = useSetAtom(resetOptionsAtom);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const processImage = useCallback(
-    (img: HTMLImageElement, opts: DitherOptions) => {
+    (img: HTMLImageElement, opts: typeof options) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -51,7 +72,7 @@ export default function Home() {
         setIsProcessing(false);
       });
     },
-    [],
+    [setIsProcessing, setProcessedDataUrl],
   );
 
   useEffect(() => {
@@ -60,30 +81,36 @@ export default function Home() {
     }
   }, [originalImage, options, processImage]);
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
+  const handleFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setOriginalDataUrl(dataUrl);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setOriginalDataUrl(dataUrl);
+
+        const img = new window.Image();
+        img.onload = () => setOriginalImage(img);
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    },
+    [setOriginalDataUrl, setOriginalImage],
+  );
+
+  const handleImageUrl = useCallback(
+    (url: string, promptText?: string) => {
+      setOriginalDataUrl(url);
+      if (promptText) setPrompt(promptText);
 
       const img = new window.Image();
+      img.crossOrigin = "anonymous";
       img.onload = () => setOriginalImage(img);
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleImageUrl = useCallback((url: string, promptText?: string) => {
-    setOriginalDataUrl(url);
-    if (promptText) setPrompt(promptText);
-
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => setOriginalImage(img);
-    img.src = url;
-  }, []);
+      img.src = url;
+    },
+    [setOriginalDataUrl, setOriginalImage, setPrompt],
+  );
 
   const handleDownload = useCallback(() => {
     if (!processedDataUrl) return;
@@ -94,12 +121,8 @@ export default function Home() {
   }, [processedDataUrl]);
 
   const handleReset = useCallback(() => {
-    setOriginalImage(null);
-    setOriginalDataUrl(null);
-    setProcessedDataUrl(null);
-    setOptions(defaultOptions);
-    setPrompt(null);
-  }, []);
+    resetImage();
+  }, [resetImage]);
 
   const handleSave = useCallback(async () => {
     if (!processedDataUrl || !user) return;
@@ -128,7 +151,7 @@ export default function Home() {
       console.error("Error saving dither:", error);
       setIsSaving(false);
     }
-  }, [processedDataUrl, user, prompt, router]);
+  }, [processedDataUrl, user, prompt, router, setIsSaving]);
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
@@ -139,9 +162,9 @@ export default function Home() {
       <main className="min-h-[calc(100vh-56px)] flex flex-col lg:flex-row">
         {/* Main Panel */}
         <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-          {!originalImage ? (
+          {!hasImage ? (
             <div className="w-full max-w-lg flex flex-col items-center">
-              <ModeToggle mode={inputMode} onModeChange={setInputMode} />
+              <ModeToggle />
 
               <div className="w-full h-[280px] sm:h-[320px] flex flex-col">
                 {inputMode === "upload" ? (
@@ -152,24 +175,16 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <ImagePreview
-              src={processedDataUrl || originalDataUrl || ""}
-              isProcessing={isProcessing}
-            />
+            <ImagePreview />
           )}
         </div>
 
         {/* Controls Panel */}
         <ControlsPanel
-          options={options}
-          onOptionsChange={setOptions}
           onDownload={handleDownload}
           onSave={handleSave}
-          onResetSettings={() => setOptions(defaultOptions)}
-          canDownload={!!processedDataUrl}
-          canSave={!!processedDataUrl && !!user}
-          isSaving={isSaving}
-          visible={!!originalImage}
+          onReset={handleReset}
+          onResetSettings={resetOptions}
         />
       </main>
     </div>

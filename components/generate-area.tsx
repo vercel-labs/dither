@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-
-const aiModels = [
-  { id: "bfl/flux-kontext-max", name: "FLUX MAX" },
-  { id: "bfl/flux-kontext-pro", name: "FLUX PRO" },
-  { id: "google/gemini-2.5-flash-image", name: "GEMINI FLASH" },
-  { id: "google/gemini-3-pro-image", name: "GEMINI PRO" },
-];
+import { useCallback, useRef, useEffect } from "react";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  aiModels,
+  selectedModelAtom,
+  generatePromptAtom,
+  isGeneratingAtom,
+  generateErrorAtom,
+} from "@/lib/atoms";
 
 interface GenerateAreaProps {
   onImageGenerated: (url: string, prompt?: string) => void;
 }
 
 export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
-  const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState(aiModels[0].id);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [prompt, setPrompt] = useAtom(generatePromptAtom);
+  const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom);
+  const [isGenerating, setIsGenerating] = useAtom(isGeneratingAtom);
+  const [error, setError] = useAtom(generateErrorAtom);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-expand textarea
@@ -58,7 +59,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [prompt, selectedModel, onImageGenerated]);
+  }, [prompt, selectedModel, onImageGenerated, setIsGenerating, setError]);
 
   return (
     <div className="w-full h-full flex flex-col">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
-import { useApp } from "@/components/app-provider";
+import { userAtom, providersAtom } from "@/lib/atoms";
 import { ChevronDown, LogOut, User } from "lucide-react";
 
 // Elegant loading indicator
@@ -32,7 +33,8 @@ const PROVIDER_NAMES: Record<string, string> = {
 };
 
 export function Header() {
-  const { user: initialUser, providers } = useApp();
+  const [initialUser, setUser] = useAtom(userAtom);
+  const providers = useAtomValue(providersAtom);
   const { data: session, isPending } = useSession();
   const [signingIn, setSigningIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,6 +43,16 @@ export function Header() {
   // Use session data if available, otherwise fall back to initial user
   const user = session?.user ?? initialUser;
   const isSignedIn = !!user;
+
+  // Update user atom when session changes
+  useEffect(() => {
+    if (session?.user) {
+      setUser({
+        name: session.user.name ?? null,
+        image: session.user.image ?? null,
+      });
+    }
+  }, [session, setUser]);
 
   const handleSignIn = (provider: string) => {
     setSigningIn(true);
@@ -51,6 +63,7 @@ export function Header() {
   const handleSignOut = async () => {
     setMenuOpen(false);
     await signOut();
+    setUser(null);
   };
 
   // Close menus when clicking outside

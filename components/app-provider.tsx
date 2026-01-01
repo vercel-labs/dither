@@ -1,25 +1,22 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
+import { Provider, useSetAtom } from "jotai";
+import { useHydrateAtoms } from "jotai/utils";
+import { ReactNode, useEffect } from "react";
+import { userAtom, providersAtom, type User } from "@/lib/atoms";
 
-interface User {
-  name: string | null;
-  image: string | null;
-}
-
-interface AppContextValue {
-  user: User | null;
+interface HydrateAtomsProps {
+  initialUser: User | null;
   providers: string[];
+  children: ReactNode;
 }
 
-const AppContext = createContext<AppContextValue | null>(null);
-
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error("useApp must be used within AppProvider");
-  }
-  return ctx;
+function HydrateAtoms({ initialUser, providers, children }: HydrateAtomsProps) {
+  useHydrateAtoms([
+    [userAtom, initialUser],
+    [providersAtom, providers],
+  ]);
+  return <>{children}</>;
 }
 
 interface AppProviderProps {
@@ -34,8 +31,10 @@ export function AppProvider({
   providers,
 }: AppProviderProps) {
   return (
-    <AppContext.Provider value={{ user: initialUser, providers }}>
-      {children}
-    </AppContext.Provider>
+    <Provider>
+      <HydrateAtoms initialUser={initialUser} providers={providers}>
+        {children}
+      </HydrateAtoms>
+    </Provider>
   );
 }
