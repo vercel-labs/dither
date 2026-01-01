@@ -9,7 +9,7 @@ export async function generateTitleFromPrompt(prompt: string): Promise<string> {
       model: "openai/gpt-4o-mini",
       prompt: `Generate a creative 2-3 word title for an image with this description: "${prompt}". 
 Only respond with the title, nothing else. No quotes, no punctuation, just 2-3 words.`,
-      maxTokens: 20,
+      maxOutputTokens: 20,
     });
 
     return result.text.trim();
@@ -27,16 +27,6 @@ export async function generateTitleFromImage(
   imageData: string,
 ): Promise<string> {
   try {
-    // Determine the mime type from the data URL
-    const mimeType = imageData.startsWith("data:image/png")
-      ? "image/png"
-      : imageData.startsWith("data:image/jpeg") ||
-          imageData.startsWith("data:image/jpg")
-        ? "image/jpeg"
-        : imageData.startsWith("data:image/webp")
-          ? "image/webp"
-          : "image/png";
-
     const result = await generateText({
       model: "openai/gpt-4o-mini",
       messages: [
@@ -46,7 +36,6 @@ export async function generateTitleFromImage(
             {
               type: "image",
               image: imageData,
-              mimeType,
             },
             {
               type: "text",
@@ -56,7 +45,7 @@ Only respond with the title, nothing else. No quotes, no punctuation, just 2-3 w
           ],
         },
       ],
-      maxTokens: 20,
+      maxOutputTokens: 20,
     });
 
     return result.text.trim();
