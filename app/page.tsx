@@ -378,7 +378,7 @@ export default function Home() {
                   </button>
 
                   <p className="text-xs text-white/20 text-center">
-                    Press ⌘ + Enter to generate • Requires anything-to-3d server running
+                    Press ⌘ + Enter to generate • Powered by AI Gateway
                   </p>
                 </div>
               )}
@@ -599,8 +599,8 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t border-white/[0.08] mt-20">
           <div className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between text-sm text-white/30">
-            <span>Built with Next.js</span>
-            <span>All processing happens locally in your browser</span>
+            <span>Built with Next.js & AI SDK</span>
+            <span>Dithering runs locally • AI via Vercel AI Gateway</span>
           </div>
         </footer>
       </div>
