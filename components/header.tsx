@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 
 // Elegant loading indicator
 function LoadingIndicator() {
@@ -80,7 +80,7 @@ export function Header() {
 
   return (
     <header className="h-14 border-b border-black/10 shrink-0">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 h-full flex items-center justify-between">
+      <div className="px-4 sm:px-8 h-full flex items-center justify-between">
         <a
           href="/"
           className="text-xs tracking-[0.3em] uppercase hover:text-black/60 transition-colors"
@@ -109,20 +109,9 @@ export function Header() {
                   e.stopPropagation();
                   setMenuOpen(!menuOpen);
                 }}
-                className="flex items-center gap-2 text-xs hover:text-black/60 transition-colors"
+                className="flex items-center gap-1 text-xs tracking-wide hover:text-black/60 transition-colors"
               >
-                {user?.image ? (
-                  <img
-                    src={user.image}
-                    alt=""
-                    className="w-6 h-6 rounded-full"
-                  />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center">
-                    <User className="w-3 h-3" />
-                  </div>
-                )}
-                <span className="hidden sm:inline">{user?.name || "User"}</span>
+                <span className="uppercase">{user?.name || "USER"}</span>
                 <ChevronDown className="w-3 h-3" />
               </button>
 
