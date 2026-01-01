@@ -88,12 +88,15 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe your image..."
           rows={1}
+          enterKeyHint="send"
           className="w-full px-3 py-4 bg-transparent border-0 border-b border-black/20 
             text-base font-serif placeholder:text-black/30 focus:outline-none focus:border-black
             resize-none text-left overflow-hidden"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && e.metaKey && !isGenerating)
+            if (e.key === "Enter" && !e.shiftKey && !isGenerating) {
+              e.preventDefault();
               handleGenerate();
+            }
           }}
         />
 
