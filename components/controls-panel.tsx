@@ -25,6 +25,9 @@ interface ControlsPanelProps {
   onSave: () => void;
   onReset: () => void;
   onResetSettings: () => void;
+  saveLabel?: string;
+  resetLabel?: string;
+  alwaysEnableSave?: boolean;
 }
 
 export function ControlsPanel({
@@ -32,11 +35,15 @@ export function ControlsPanel({
   onSave,
   onReset,
   onResetSettings,
+  saveLabel = "Save",
+  resetLabel,
+  alwaysEnableSave = false,
 }: ControlsPanelProps) {
   const [options, setOptions] = useAtom(ditherOptionsAtom);
   const hasImage = useAtomValue(hasImageAtom);
   const canDownload = useAtomValue(canDownloadAtom);
-  const canSave = useAtomValue(canSaveAtom);
+  const canSaveAtomValue = useAtomValue(canSaveAtom);
+  const canSave = alwaysEnableSave || canSaveAtomValue;
   const isSaving = useAtomValue(isSavingAtom);
   const showThreshold = useAtomValue(showThresholdAtom);
 
@@ -117,7 +124,7 @@ export function ControlsPanel({
               bg-black text-white active:bg-transparent active:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving..." : saveLabel}
           </button>
           <button
             onClick={onDownload}
@@ -212,7 +219,7 @@ export function ControlsPanel({
               bg-black text-white hover:bg-transparent hover:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving..." : saveLabel}
           </button>
           <button
             onClick={onDownload}
@@ -228,7 +235,7 @@ export function ControlsPanel({
             className="w-full text-[10px] py-3 
               text-black/40 hover:text-black transition-colors"
           >
-            Reset Settings
+            {resetLabel || "Reset Settings"}
           </button>
         </div>
       </div>

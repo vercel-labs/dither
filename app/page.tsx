@@ -48,6 +48,7 @@ export default function Home() {
   const resetOptions = useSetAtom(resetOptionsAtom);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isNewImageRef = useRef(false); // Track if we just loaded a new image
 
   const processImage = useCallback(
     (img: HTMLImageElement, opts: typeof options) => {
@@ -81,9 +82,47 @@ export default function Home() {
     }
   }, [originalImage, options, processImage]);
 
+  // Auto-save and redirect when a new image is processed
+  useEffect(() => {
+    if (!isNewImageRef.current || !processedDataUrl || !user || isSaving)
+      return;
+
+    const autoSave = async () => {
+      isNewImageRef.current = false; // Reset flag before saving
+      setIsSaving(true);
+      const id = generateId();
+
+      try {
+        const response = await fetch("/api/dithers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            prompt,
+            imageData: processedDataUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to save dither");
+        }
+
+        router.push(`/d/${id}`);
+      } catch (error) {
+        console.error("Error auto-saving dither:", error);
+        setIsSaving(false);
+      }
+    };
+
+    autoSave();
+  }, [processedDataUrl, user, prompt, router, setIsSaving, isSaving]);
+
   const handleFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) return;
+
+      isNewImageRef.current = true; // Mark as new image for auto-save
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -101,6 +140,8 @@ export default function Home() {
 
   const handleImageUrl = useCallback(
     (url: string, promptText?: string) => {
+      isNewImageRef.current = true; // Mark as new image for auto-save
+
       setOriginalDataUrl(url);
       if (promptText) setPrompt(promptText);
 
