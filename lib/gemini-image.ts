@@ -61,4 +61,3 @@ export async function generateGeminiImageUrl(
 
   return `data:${result.image.mimeType};base64,${result.image.base64}`;
 }
-

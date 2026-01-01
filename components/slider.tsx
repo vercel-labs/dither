@@ -10,14 +10,14 @@ interface SliderProps {
   formatValue?: (value: number) => string;
 }
 
-export function Slider({ 
-  label, 
-  value, 
-  onChange, 
-  min, 
-  max, 
+export function Slider({
+  label,
+  value,
+  onChange,
+  min,
+  max,
   step = 1,
-  formatValue = (v) => String(v)
+  formatValue = (v) => String(v),
 }: SliderProps) {
   return (
     <div className="space-y-2">
@@ -31,7 +31,11 @@ export function Slider({
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(step < 1 ? parseFloat(e.target.value) : parseInt(e.target.value))}
+        onChange={(e) =>
+          onChange(
+            step < 1 ? parseFloat(e.target.value) : parseInt(e.target.value),
+          )
+        }
         className="w-full h-6 bg-transparent appearance-none cursor-pointer touch-pan-y
           [&::-webkit-slider-runnable-track]:h-px [&::-webkit-slider-runnable-track]:bg-black/20
           [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 

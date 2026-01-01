@@ -20,15 +20,17 @@ interface ControlsPanelProps {
   visible: boolean;
 }
 
-export function ControlsPanel({ 
-  options, 
-  onOptionsChange, 
-  onDownload, 
+export function ControlsPanel({
+  options,
+  onOptionsChange,
+  onDownload,
   onResetSettings,
   canDownload,
-  visible 
+  visible,
 }: ControlsPanelProps) {
-  const showThreshold = ["floyd-steinberg", "atkinson", "threshold"].includes(options.algorithm);
+  const showThreshold = ["floyd-steinberg", "atkinson", "threshold"].includes(
+    options.algorithm,
+  );
 
   if (!visible) return null;
 
@@ -38,12 +40,16 @@ export function ControlsPanel({
       <div className="lg:hidden space-y-6">
         {/* Algorithm - horizontal scroll on mobile */}
         <div className="space-y-3">
-          <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">Algorithm</h3>
+          <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">
+            Algorithm
+          </h3>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-8 sm:px-8">
             {algorithms.map((algo) => (
               <button
                 key={algo.value}
-                onClick={() => onOptionsChange({ ...options, algorithm: algo.value })}
+                onClick={() =>
+                  onOptionsChange({ ...options, algorithm: algo.value })
+                }
                 className={`flex-shrink-0 text-[10px] tracking-[0.15em] uppercase px-3 py-2 border transition-colors ${
                   options.algorithm === algo.value
                     ? "border-black bg-black text-white"
@@ -122,12 +128,16 @@ export function ControlsPanel({
         <div className="flex-1 space-y-10 overflow-y-auto">
           {/* Algorithm */}
           <div className="space-y-4">
-            <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">Algorithm</h3>
+            <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">
+              Algorithm
+            </h3>
             <div className="space-y-2">
               {algorithms.map((algo) => (
                 <button
                   key={algo.value}
-                  onClick={() => onOptionsChange({ ...options, algorithm: algo.value })}
+                  onClick={() =>
+                    onOptionsChange({ ...options, algorithm: algo.value })
+                  }
                   className={`block w-full text-left text-xs tracking-[0.15em] py-2 transition-colors ${
                     options.algorithm === algo.value
                       ? "text-black"

@@ -31,22 +31,22 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
-    
+
     setIsGenerating(true);
     setError(null);
-    
+
     try {
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim(), modelId: selectedModel }),
       });
-      
+
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Failed to generate image");
       }
-      
+
       const data = await response.json();
       if (data.image?.url) {
         onImageGenerated(data.image.url);
@@ -91,7 +91,8 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
             text-base font-serif placeholder:text-black/30 focus:outline-none focus:border-black
             resize-none text-left overflow-hidden"
           onKeyDown={(e) => {
-            if (e.key === "Enter" && e.metaKey && !isGenerating) handleGenerate();
+            if (e.key === "Enter" && e.metaKey && !isGenerating)
+              handleGenerate();
           }}
         />
 

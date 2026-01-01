@@ -1,4 +1,9 @@
-export type DitherAlgorithm = 'floyd-steinberg' | 'ordered' | 'atkinson' | 'bayer' | 'threshold';
+export type DitherAlgorithm =
+  | "floyd-steinberg"
+  | "ordered"
+  | "atkinson"
+  | "bayer"
+  | "threshold";
 
 export interface DitherOptions {
   algorithm: DitherAlgorithm;
@@ -9,7 +14,7 @@ export interface DitherOptions {
 }
 
 export const defaultOptions: DitherOptions = {
-  algorithm: 'floyd-steinberg',
+  algorithm: "floyd-steinberg",
   threshold: 128,
   contrast: 1,
   brightness: 0,
@@ -42,7 +47,7 @@ function clamp(value: number, min: number, max: number): number {
 function applyContrastBrightness(
   value: number,
   contrast: number,
-  brightness: number
+  brightness: number,
 ): number {
   // Apply brightness first, then contrast
   let result = value + brightness;
@@ -57,7 +62,7 @@ function toGrayscale(r: number, g: number, b: number): number {
 
 export function applyDither(
   imageData: ImageData,
-  options: DitherOptions
+  options: DitherOptions,
 ): ImageData {
   const { algorithm, threshold, contrast, brightness, scale } = options;
   const width = imageData.width;
@@ -76,12 +81,12 @@ export function applyDither(
   if (scale > 1) {
     const scaledWidth = Math.ceil(width / scale);
     const scaledHeight = Math.ceil(height / scale);
-    
+
     for (let sy = 0; sy < scaledHeight; sy++) {
       for (let sx = 0; sx < scaledWidth; sx++) {
         let sum = 0;
         let count = 0;
-        
+
         for (let dy = 0; dy < scale && sy * scale + dy < height; dy++) {
           for (let dx = 0; dx < scale && sx * scale + dx < width; dx++) {
             const idx = (sy * scale + dy) * width + (sx * scale + dx);
@@ -89,9 +94,9 @@ export function applyDither(
             count++;
           }
         }
-        
+
         const avg = sum / count;
-        
+
         for (let dy = 0; dy < scale && sy * scale + dy < height; dy++) {
           for (let dx = 0; dx < scale && sx * scale + dx < width; dx++) {
             const idx = (sy * scale + dy) * width + (sx * scale + dx);
@@ -105,19 +110,19 @@ export function applyDither(
   let output: Uint8ClampedArray;
 
   switch (algorithm) {
-    case 'floyd-steinberg':
+    case "floyd-steinberg":
       output = floydSteinberg(grayscale, width, height, threshold);
       break;
-    case 'atkinson':
+    case "atkinson":
       output = atkinson(grayscale, width, height, threshold);
       break;
-    case 'ordered':
+    case "ordered":
       output = orderedDither(grayscale, width, height, bayerMatrix4x4, 16);
       break;
-    case 'bayer':
+    case "bayer":
       output = orderedDither(grayscale, width, height, bayerMatrix8x8, 64);
       break;
-    case 'threshold':
+    case "threshold":
       output = thresholdDither(grayscale, width, height, threshold);
       break;
     default:
@@ -141,14 +146,14 @@ function thresholdDither(
   grayscale: Float32Array,
   width: number,
   height: number,
-  threshold: number
+  threshold: number,
 ): Uint8ClampedArray {
   const output = new Uint8ClampedArray(width * height);
-  
+
   for (let i = 0; i < grayscale.length; i++) {
     output[i] = grayscale[i] < threshold ? 0 : 255;
   }
-  
+
   return output;
 }
 
@@ -156,7 +161,7 @@ function floydSteinberg(
   grayscale: Float32Array,
   width: number,
   height: number,
-  threshold: number
+  threshold: number,
 ): Uint8ClampedArray {
   const errors = new Float32Array(grayscale);
   const output = new Uint8ClampedArray(width * height);
@@ -192,7 +197,7 @@ function atkinson(
   grayscale: Float32Array,
   width: number,
   height: number,
-  threshold: number
+  threshold: number,
 ): Uint8ClampedArray {
   const errors = new Float32Array(grayscale);
   const output = new Uint8ClampedArray(width * height);
@@ -227,7 +232,7 @@ function orderedDither(
   width: number,
   height: number,
   matrix: number[][],
-  matrixScale: number
+  matrixScale: number,
 ): Uint8ClampedArray {
   const output = new Uint8ClampedArray(width * height);
   const matrixSize = matrix.length;
@@ -243,4 +248,3 @@ function orderedDither(
 
   return output;
 }
-

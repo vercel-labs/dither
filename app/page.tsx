@@ -10,37 +10,42 @@ import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
 
 export default function Home() {
-  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
+  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
+    null,
+  );
   const [originalDataUrl, setOriginalDataUrl] = useState<string | null>(null);
   const [processedDataUrl, setProcessedDataUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [options, setOptions] = useState<DitherOptions>(defaultOptions);
   const [inputMode, setInputMode] = useState<InputMode>("upload");
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const processImage = useCallback((img: HTMLImageElement, opts: DitherOptions) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const processImage = useCallback(
+    (img: HTMLImageElement, opts: DitherOptions) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    setIsProcessing(true);
+      setIsProcessing(true);
 
-    requestAnimationFrame(() => {
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
+      requestAnimationFrame(() => {
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const dithered = applyDither(imageData, opts);
-      ctx.putImageData(dithered, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const dithered = applyDither(imageData, opts);
+        ctx.putImageData(dithered, 0, 0);
 
-      setProcessedDataUrl(canvas.toDataURL("image/png"));
-      setIsProcessing(false);
-    });
-  }, []);
+        setProcessedDataUrl(canvas.toDataURL("image/png"));
+        setIsProcessing(false);
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (originalImage) {
@@ -55,7 +60,7 @@ export default function Home() {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setOriginalDataUrl(dataUrl);
-      
+
       const img = new window.Image();
       img.onload = () => setOriginalImage(img);
       img.src = dataUrl;
@@ -65,7 +70,7 @@ export default function Home() {
 
   const handleImageUrl = useCallback((url: string) => {
     setOriginalDataUrl(url);
-    
+
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => setOriginalImage(img);
@@ -109,9 +114,9 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <ImagePreview 
-              src={processedDataUrl || originalDataUrl || ""} 
-              isProcessing={isProcessing} 
+            <ImagePreview
+              src={processedDataUrl || originalDataUrl || ""}
+              isProcessing={isProcessing}
             />
           )}
         </div>

@@ -22,7 +22,9 @@ export function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
       <button
         onClick={() => onModeChange("generate")}
         className={`text-[10px] tracking-[0.3em] uppercase transition-colors ${
-          mode === "generate" ? "text-black" : "text-black/30 hover:text-black/60"
+          mode === "generate"
+            ? "text-black"
+            : "text-black/30 hover:text-black/60"
         }`}
       >
         Generate
@@ -30,4 +32,3 @@ export function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
     </div>
   );
 }
-

@@ -10,19 +10,28 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) onFileSelect(file);
-  }, [onFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) onFileSelect(file);
+    },
+    [onFileSelect],
+  );
 
   return (
     <div
       onClick={() => fileInputRef.current?.click()}
       onDrop={handleDrop}
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-      onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        setIsDragging(false);
+      }}
       className={`
         w-full h-full border cursor-pointer
         flex items-center justify-center transition-colors
@@ -42,4 +51,3 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
     </div>
   );
 }
-
