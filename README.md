@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dither
+
+A web application for applying classic dithering effects to images. Upload your own images or generate them with AI, then transform them with various dithering algorithms.
+
+## Features
+
+- **Multiple Dithering Algorithms**
+  - Floyd-Steinberg – classic error diffusion
+  - Atkinson – lighter dithering, preserves highlights
+  - Ordered (4×4) – patterned dithering
+  - Bayer (8×8) – larger matrix ordered dithering
+  - Threshold – simple black/white cutoff
+
+- **Image Controls**
+  - Threshold adjustment
+  - Contrast enhancement
+  - Brightness modification
+  - Pixel scale (for retro low-res effects)
+
+- **AI Image Generation**
+  - FLUX Kontext Max / Pro
+  - Gemini 2.5 Flash / 3 Pro
+
+- **User Experience**
+  - Drag & drop or click to upload
+  - Real-time preview
+  - Download processed images as PNG
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- pnpm
+- PostgreSQL database
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+DATABASE_URL=postgres://...
+BETTER_AUTH_SECRET=your-secret
+OPENROUTER_API_KEY=your-key
+```
 
-## Learn More
+### Database Setup
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm db:push
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev
+```
 
-## Deploy on Vercel
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start development server |
+| `pnpm build` | Build for production |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm type-check` | Run TypeScript checks |
+| `pnpm format` | Format code with Prettier |
+| `pnpm db:generate` | Generate Drizzle migrations |
+| `pnpm db:migrate` | Run migrations |
+| `pnpm db:push` | Push schema to database |
+| `pnpm db:studio` | Open Drizzle Studio |
+
+## License
+
+MIT
