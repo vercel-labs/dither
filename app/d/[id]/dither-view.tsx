@@ -29,11 +29,11 @@ export function DitherView({
 }: DitherViewProps) {
   // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
-  const [originalDataUrl, setOriginalDataUrl] = useAtom(originalDataUrlAtom);
+  const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
   const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
-  const [options, setOptions] = useAtom(ditherOptionsAtom);
-  const [isProcessing, setIsProcessing] = useAtom(isProcessingAtom);
-  const [prompt, setPrompt] = useAtom(promptAtom);
+  const options = useAtomValue(ditherOptionsAtom);
+  const setIsProcessing = useSetAtom(isProcessingAtom);
+  const setPrompt = useSetAtom(promptAtom);
   const resetOptions = useSetAtom(resetOptionsAtom);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
