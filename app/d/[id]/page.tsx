@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { dithers, type Visibility } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
@@ -8,6 +9,47 @@ import { DitherView } from "./dither-view";
 
 interface DitherPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: DitherPageProps): Promise<Metadata> {
+  const { id } = await params;
+
+  const dither = await db.query.dithers.findFirst({
+    where: eq(dithers.id, id),
+  });
+
+  if (!dither || !dither.imageUrl) {
+    return {
+      title: "Dither Not Found",
+    };
+  }
+
+  const title = dither.title || "Dither";
+
+  return {
+    title,
+    description: dither.prompt || "A dithered image created with Dither",
+    openGraph: {
+      title,
+      description: dither.prompt || "A dithered image created with Dither",
+      images: [
+        {
+          url: dither.imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: dither.prompt || "A dithered image created with Dither",
+      images: [dither.imageUrl],
+    },
+  };
 }
 
 export default async function DitherPage({ params }: DitherPageProps) {
