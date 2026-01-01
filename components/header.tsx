@@ -76,6 +76,14 @@ export function Header() {
         </a>
 
         <div className="flex items-center gap-4">
+          <a
+            href="https://github.com/vercel-labs/dither"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs tracking-wide text-black/60 hover:text-black transition-colors"
+          >
+            GitHub
+          </a>
           {isPending || signingIn ? (
             <div className="text-black/40">
               <LoadingIndicator />

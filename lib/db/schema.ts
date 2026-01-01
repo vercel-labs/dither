@@ -1,4 +1,5 @@
 import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { generateId } from "../id";
 
 // Better Auth tables (plural names)
 export const users = pgTable("users", {
@@ -51,6 +52,21 @@ export const verifications = pgTable("verifications", {
   updatedAt: timestamp("updated_at"),
 });
 
+// Application tables
+export const dithers = pgTable("dithers", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  prompt: text("prompt"),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Dither = typeof dithers.$inferSelect;
