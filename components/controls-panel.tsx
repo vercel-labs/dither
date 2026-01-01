@@ -15,8 +15,11 @@ interface ControlsPanelProps {
   options: DitherOptions;
   onOptionsChange: (options: DitherOptions) => void;
   onDownload: () => void;
+  onSave: () => void;
   onResetSettings: () => void;
   canDownload: boolean;
+  canSave: boolean;
+  isSaving: boolean;
   visible: boolean;
 }
 
@@ -24,8 +27,11 @@ export function ControlsPanel({
   options,
   onOptionsChange,
   onDownload,
+  onSave,
   onResetSettings,
   canDownload,
+  canSave,
+  isSaving,
   visible,
 }: ControlsPanelProps) {
   const showThreshold = ["floyd-steinberg", "atkinson", "threshold"].includes(
@@ -105,11 +111,19 @@ export function ControlsPanel({
         {/* Actions - side by side on mobile */}
         <div className="flex gap-3 pt-4 border-t border-black/10">
           <button
-            onClick={onDownload}
-            disabled={!canDownload}
+            onClick={onSave}
+            disabled={!canSave || isSaving}
             className="flex-1 text-[10px] tracking-[0.3em] uppercase py-3 border border-black 
               bg-black text-white active:bg-transparent active:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={onDownload}
+            disabled={!canDownload}
+            className="text-[10px] tracking-[0.3em] uppercase px-4 py-3 
+              text-black/40 active:text-black transition-colors"
           >
             Download
           </button>
@@ -194,10 +208,19 @@ export function ControlsPanel({
         {/* Actions */}
         <div className="pt-8 border-t border-black/10 space-y-3 flex-shrink-0">
           <button
-            onClick={onDownload}
-            disabled={!canDownload}
+            onClick={onSave}
+            disabled={!canSave || isSaving}
             className="w-full text-[10px] tracking-[0.3em] uppercase py-3 border border-black 
               bg-black text-white hover:bg-transparent hover:text-black transition-colors
+              disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={onDownload}
+            disabled={!canDownload}
+            className="w-full text-[10px] tracking-[0.3em] uppercase py-3 border border-black/20
+              text-black/60 hover:border-black hover:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Download

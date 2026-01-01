@@ -10,7 +10,7 @@ const aiModels = [
 ];
 
 interface GenerateAreaProps {
-  onImageGenerated: (url: string) => void;
+  onImageGenerated: (url: string, prompt?: string) => void;
 }
 
 export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
@@ -49,7 +49,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
 
       const data = await response.json();
       if (data.image?.url) {
-        onImageGenerated(data.image.url);
+        onImageGenerated(data.image.url, prompt.trim());
       } else {
         throw new Error("No image returned");
       }

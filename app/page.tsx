@@ -1,23 +1,30 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { applyDither, defaultOptions, type DitherOptions } from "@/lib/dither";
+import { generateId } from "@/lib/id";
 import { Header } from "@/components/header";
 import { ModeToggle, type InputMode } from "@/components/mode-toggle";
 import { UploadArea } from "@/components/upload-area";
 import { GenerateArea } from "@/components/generate-area";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
+import { useApp } from "@/components/app-provider";
 
 export default function Home() {
+  const router = useRouter();
+  const { user } = useApp();
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
     null,
   );
   const [originalDataUrl, setOriginalDataUrl] = useState<string | null>(null);
   const [processedDataUrl, setProcessedDataUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [options, setOptions] = useState<DitherOptions>(defaultOptions);
   const [inputMode, setInputMode] = useState<InputMode>("upload");
+  const [prompt, setPrompt] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -68,8 +75,9 @@ export default function Home() {
     reader.readAsDataURL(file);
   }, []);
 
-  const handleImageUrl = useCallback((url: string) => {
+  const handleImageUrl = useCallback((url: string, promptText?: string) => {
     setOriginalDataUrl(url);
+    if (promptText) setPrompt(promptText);
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -90,7 +98,37 @@ export default function Home() {
     setOriginalDataUrl(null);
     setProcessedDataUrl(null);
     setOptions(defaultOptions);
+    setPrompt(null);
   }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!processedDataUrl || !user) return;
+
+    setIsSaving(true);
+    const id = generateId();
+
+    try {
+      const response = await fetch("/api/dithers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          prompt,
+          imageData: processedDataUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save dither");
+      }
+
+      router.push(`/d/${id}`);
+    } catch (error) {
+      console.error("Error saving dither:", error);
+      setIsSaving(false);
+    }
+  }, [processedDataUrl, user, prompt, router]);
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
@@ -126,8 +164,11 @@ export default function Home() {
           options={options}
           onOptionsChange={setOptions}
           onDownload={handleDownload}
+          onSave={handleSave}
           onResetSettings={() => setOptions(defaultOptions)}
           canDownload={!!processedDataUrl}
+          canSave={!!processedDataUrl && !!user}
+          isSaving={isSaving}
           visible={!!originalImage}
         />
       </main>

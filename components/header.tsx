@@ -82,7 +82,7 @@ export function Header() {
             rel="noopener noreferrer"
             className="text-xs tracking-wide text-black/60 hover:text-black transition-colors"
           >
-            GitHub
+            GITHUB
           </a>
           {isPending || signingIn ? (
             <div className="text-black/40">
