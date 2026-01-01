@@ -78,7 +78,7 @@ export type InputMode = "upload" | "generate";
 
 export const inputModeAtom = atomWithStorage<InputMode>(
   "input-mode",
-  "upload",
+  "generate",
   createCookieStorage<InputMode>(),
 );
 export const isProcessingAtom = atom(false);

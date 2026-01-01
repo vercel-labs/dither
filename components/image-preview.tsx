@@ -257,7 +257,7 @@ export function ImagePreview() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full min-h-[200px] sm:min-h-[300px] flex items-center justify-center overflow-hidden touch-none"
+      className="relative w-full h-full flex items-center justify-center overflow-hidden touch-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

@@ -11,15 +11,6 @@ export function ModeToggle() {
   return (
     <div className="h-8 flex items-center gap-8 mb-16">
       <button
-        onClick={() => setMode("upload")}
-        className={`text-[10px] transition-colors ${
-          mode === "upload" ? "text-black" : "text-black/30 hover:text-black/60"
-        }`}
-      >
-        Upload
-      </button>
-      <span className="text-black/20">|</span>
-      <button
         onClick={() => setMode("generate")}
         className={`text-[10px] transition-colors ${
           mode === "generate"
@@ -28,6 +19,15 @@ export function ModeToggle() {
         }`}
       >
         Generate
+      </button>
+      <span className="text-black/20">|</span>
+      <button
+        onClick={() => setMode("upload")}
+        className={`text-[10px] transition-colors ${
+          mode === "upload" ? "text-black" : "text-black/30 hover:text-black/60"
+        }`}
+      >
+        Upload
       </button>
     </div>
   );

@@ -154,14 +154,14 @@ export default function Home() {
   }, [processedDataUrl, user, prompt, router, setIsSaving]);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
 
       <Header />
 
-      <main className="min-h-[calc(100vh-56px)] flex flex-col lg:flex-row">
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
           {!hasImage ? (
             <div className="w-full max-w-lg flex flex-col items-center">
               <ModeToggle />

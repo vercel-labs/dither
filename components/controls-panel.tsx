@@ -43,7 +43,7 @@ export function ControlsPanel({
   if (!hasImage) return null;
 
   return (
-    <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-black/10 p-4 sm:p-8 flex-shrink-0">
+    <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-black/10 p-4 sm:p-8 shrink-0 overflow-y-auto">
       {/* Mobile: Horizontal layout for algorithm */}
       <div className="lg:hidden space-y-6">
         {/* Algorithm - horizontal scroll on mobile */}

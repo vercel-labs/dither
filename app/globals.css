@@ -120,8 +120,9 @@
   * {
     @apply border-border outline-ring/50 uppercase tracking-[0.08em];
   }
+  html,
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground h-full overflow-hidden;
   }
 }
 
