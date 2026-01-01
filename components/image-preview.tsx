@@ -8,8 +8,8 @@ import {
   isProcessingAtom,
 } from "@/lib/atoms";
 
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 5;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2;
 
 export function ImagePreview() {
   const processedDataUrl = useAtomValue(processedDataUrlAtom);
@@ -80,13 +80,18 @@ export function ImagePreview() {
         MAX_ZOOM,
         Math.max(MIN_ZOOM, prevZoom + delta * prevZoom),
       );
-      const zoomRatio = newZoom / prevZoom;
 
-      // Adjust pan to zoom toward cursor position
-      setPan((prevPan) => ({
-        x: pointX - (pointX - prevPan.x) * zoomRatio,
-        y: pointY - (pointY - prevPan.y) * zoomRatio,
-      }));
+      // Reset pan to center when at 100%
+      if (newZoom === 1) {
+        setPan({ x: 0, y: 0 });
+      } else {
+        const zoomRatio = newZoom / prevZoom;
+        // Adjust pan to zoom toward cursor position
+        setPan((prevPan) => ({
+          x: pointX - (pointX - prevPan.x) * zoomRatio,
+          y: pointY - (pointY - prevPan.y) * zoomRatio,
+        }));
+      }
 
       return newZoom;
     });
@@ -136,23 +141,28 @@ export function ImagePreview() {
             MAX_ZOOM,
             Math.max(MIN_ZOOM, prevZoom * scale),
           );
-          const zoomRatio = newZoom / prevZoom;
 
-          // Adjust pan to zoom toward pinch center
-          setPan((prevPan) => {
-            // Also account for pinch center movement
-            const dx = lastTouchCenter.current
-              ? currentCenter.x - lastTouchCenter.current.x
-              : 0;
-            const dy = lastTouchCenter.current
-              ? currentCenter.y - lastTouchCenter.current.y
-              : 0;
+          // Reset pan to center when at 100%
+          if (newZoom === 1) {
+            setPan({ x: 0, y: 0 });
+          } else {
+            const zoomRatio = newZoom / prevZoom;
+            // Adjust pan to zoom toward pinch center
+            setPan((prevPan) => {
+              // Also account for pinch center movement
+              const dx = lastTouchCenter.current
+                ? currentCenter.x - lastTouchCenter.current.x
+                : 0;
+              const dy = lastTouchCenter.current
+                ? currentCenter.y - lastTouchCenter.current.y
+                : 0;
 
-            return {
-              x: pointX - (pointX - prevPan.x) * zoomRatio + dx,
-              y: pointY - (pointY - prevPan.y) * zoomRatio + dy,
-            };
-          });
+              return {
+                x: pointX - (pointX - prevPan.x) * zoomRatio + dx,
+                y: pointY - (pointY - prevPan.y) * zoomRatio + dy,
+              };
+            });
+          }
 
           return newZoom;
         });
@@ -258,6 +268,9 @@ export function ImagePreview() {
     <div
       ref={containerRef}
       className="relative w-full h-full flex items-center justify-center overflow-hidden touch-none"
+      style={{
+        cursor: zoom > 1 ? (isPanning ? "grabbing" : "grab") : "default",
+      }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -272,11 +285,10 @@ export function ImagePreview() {
         <img
           src={src}
           alt="Dithered"
-          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none"
+          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none"
           draggable={false}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            cursor: zoom > 1 ? (isPanning ? "grabbing" : "grab") : "default",
             transition: isPanning ? "none" : "transform 0.1s ease-out",
           }}
         />
