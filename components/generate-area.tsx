@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect } from "react";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import {
   aiModels,
   selectedModelAtom,
@@ -20,9 +20,14 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
   const [isGenerating, setIsGenerating] = useAtom(isGeneratingAtom);
   const [error, setError] = useAtom(generateErrorAtom);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isInitialMount = useRef(true);
 
-  // Auto-expand textarea
+  // Auto-expand textarea (skip initial mount to prevent layout shift)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
@@ -93,7 +98,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
           autoFocus
           className="w-full px-3 py-4 bg-transparent border-0 border-b border-black/20 
             text-base font-serif placeholder:text-black/30 focus:outline-none focus:border-black
-            resize-none text-left overflow-hidden"
+            resize-none text-left overflow-hidden min-h-[56px]"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !isGenerating) {
               e.preventDefault();

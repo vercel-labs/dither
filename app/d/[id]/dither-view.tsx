@@ -15,7 +15,6 @@ import {
 import { Header } from "@/components/header";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
-import { Globe, Lock } from "lucide-react";
 import type { Visibility } from "@/lib/db/schema";
 
 interface DitherViewProps {
@@ -159,45 +158,17 @@ export function DitherView({
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
 
-      <Header title={title} />
+      <Header
+        title={title}
+        visibility={visibility}
+        isOwner={isOwner}
+        isUpdatingVisibility={isUpdatingVisibility}
+        onVisibilityChange={handleVisibilityChange}
+      />
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden">
-          {/* Visibility indicator/toggle */}
-          <div className="mb-4">
-            {isOwner ? (
-              <button
-                onClick={() =>
-                  handleVisibilityChange(
-                    visibility === "private" ? "public" : "private",
-                  )
-                }
-                disabled={isUpdatingVisibility}
-                className="flex items-center gap-1.5 text-[10px] text-black/40 hover:text-black transition-colors disabled:opacity-50"
-                title={
-                  visibility === "private" ? "Make public" : "Make private"
-                }
-              >
-                {visibility === "private" ? (
-                  <>
-                    <Lock className="w-3 h-3" />
-                    <span>Private</span>
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-3 h-3" />
-                    <span>Public</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-[10px] text-black/40">
-                <Globe className="w-3 h-3" />
-                <span>Public</span>
-              </div>
-            )}
-          </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
           <ImagePreview />
         </div>
 

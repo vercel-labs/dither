@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, Globe, Lock } from "lucide-react";
+import type { Visibility } from "@/lib/db/schema";
 
 // Animated dither loading indicator - sparkling effect
 function DitherLoader({ size = 32 }: { size?: number }) {
@@ -181,9 +182,19 @@ const PROVIDER_NAMES: Record<string, string> = {
 
 interface HeaderProps {
   title?: string | null;
+  visibility?: Visibility;
+  isOwner?: boolean;
+  isUpdatingVisibility?: boolean;
+  onVisibilityChange?: (visibility: Visibility) => void;
 }
 
-export function Header({ title }: HeaderProps = {}) {
+export function Header({
+  title,
+  visibility,
+  isOwner,
+  isUpdatingVisibility,
+  onVisibilityChange,
+}: HeaderProps = {}) {
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
   const { data: session, isPending } = useSession();
@@ -243,10 +254,57 @@ export function Header({ title }: HeaderProps = {}) {
           >
             Dither
           </a>
-          {title && (
+          {title !== undefined && (
             <>
               <span className="text-black/20">/</span>
-              <span className="text-xs text-black/60 truncate">{title}</span>
+              <span className="text-xs text-black/60 truncate">
+                {title || "Untitled"}
+              </span>
+            </>
+          )}
+          {visibility && (
+            <>
+              <span className="text-black/20">·</span>
+              {isOwner && onVisibilityChange ? (
+                <button
+                  onClick={() =>
+                    onVisibilityChange(
+                      visibility === "private" ? "public" : "private",
+                    )
+                  }
+                  disabled={isUpdatingVisibility}
+                  className="flex items-center gap-1 text-[10px] text-black/40 hover:text-black transition-colors disabled:opacity-50"
+                  title={
+                    visibility === "private" ? "Make public" : "Make private"
+                  }
+                >
+                  {visibility === "private" ? (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      <span>Private</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-3 h-3" />
+                      <span>Public</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-1 text-[10px] text-black/40">
+                  {visibility === "private" ? (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      <span>Private</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-3 h-3" />
+                      <span>Public</span>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
