@@ -6,21 +6,61 @@ import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
 import { ChevronDown, LogOut } from "lucide-react";
 
-// Elegant loading indicator
-function LoadingIndicator() {
+// Animated dither loading indicator
+function DitherLoader({ size = 32 }: { size?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const internalSize = size * 2; // Higher resolution for finer pixels
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationId: number;
+    let frame = 0;
+
+    const animate = () => {
+      frame++;
+      const imageData = ctx.createImageData(internalSize, internalSize);
+      const data = imageData.data;
+
+      // Generate animated dither pattern
+      for (let y = 0; y < internalSize; y++) {
+        for (let x = 0; x < internalSize; x++) {
+          const idx = (y * internalSize + x) * 4;
+          // Mix of noise and wave pattern for interesting animation
+          const wave =
+            Math.sin((x + frame * 0.5) * 0.2) *
+            Math.cos((y + frame * 0.3) * 0.2);
+          const noise = Math.random();
+          const combined = (wave * 0.5 + 0.5) * 0.6 + noise * 0.4;
+          const value = combined > 0.5 ? 255 : 0;
+
+          data[idx] = value;
+          data[idx + 1] = value;
+          data[idx + 2] = value;
+          data[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => cancelAnimationFrame(animationId);
+  }, [internalSize]);
+
   return (
-    <div className="flex items-center gap-[3px]">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-1 h-1 bg-current rounded-full animate-pulse"
-          style={{
-            animationDelay: `${i * 150}ms`,
-            animationDuration: "1s",
-          }}
-        />
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={internalSize}
+      height={internalSize}
+      style={{ width: size, height: size, imageRendering: "pixelated" }}
+    />
   );
 }
 
@@ -134,9 +174,13 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
 
-  // Use session data if available, otherwise fall back to initial user
+  // Use session data if available, otherwise fall back to server-provided initial user
   const user = session?.user ?? initialUser;
   const isSignedIn = !!user;
+
+  // Only show loading when actively signing in, or when pending AND no initial user
+  // (initial user from server means we already know the auth state)
+  const isLoading = signingIn || (isPending && !initialUser);
 
   // Update user atom when session changes
   useEffect(() => {
@@ -191,10 +235,8 @@ export function Header() {
           >
             GitHub
           </a>
-          {isPending || signingIn ? (
-            <div className="text-black/40">
-              <LoadingIndicator />
-            </div>
+          {isLoading ? (
+            <DitherLoader size={32} />
           ) : isSignedIn ? (
             // User Menu
             <div className="relative">

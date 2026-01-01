@@ -98,7 +98,11 @@ export const aiModels = [
 
 export type AiModelId = (typeof aiModels)[number]["id"];
 
-export const selectedModelAtom = atom<AiModelId>(aiModels[0].id);
+export const selectedModelAtom = atomWithStorage<AiModelId>(
+  "selected-model",
+  aiModels[0].id,
+  createCookieStorage<AiModelId>(),
+);
 export const generatePromptAtom = atomWithStorage<string>(
   "generate-prompt",
   "",
