@@ -6,10 +6,10 @@ import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
 import { ChevronDown, LogOut } from "lucide-react";
 
-// Animated dither loading indicator
+// Animated dither loading indicator - sparkling effect
 function DitherLoader({ size = 32 }: { size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const internalSize = size * 2; // Higher resolution for finer pixels
+  const internalSize = size * 4; // 4x resolution for fine pixels
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,38 +18,51 @@ function DitherLoader({ size = 32 }: { size?: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Pre-generate base patterns for variety
+    const patterns: boolean[][] = [];
+    for (let p = 0; p < 8; p++) {
+      const pattern: boolean[] = [];
+      const density = 0.3 + Math.random() * 0.4; // Varying densities
+      for (let i = 0; i < internalSize * internalSize; i++) {
+        pattern.push(Math.random() < density);
+      }
+      patterns.push(pattern);
+    }
+
     let animationId: number;
-    let frame = 0;
+    let lastUpdate = 0;
+    const frameInterval = 120; // Update every 120ms for sparkle effect
 
-    const animate = () => {
-      frame++;
-      const imageData = ctx.createImageData(internalSize, internalSize);
-      const data = imageData.data;
+    const animate = (timestamp: number) => {
+      if (timestamp - lastUpdate >= frameInterval) {
+        lastUpdate = timestamp;
 
-      // Generate animated dither pattern
-      for (let y = 0; y < internalSize; y++) {
-        for (let x = 0; x < internalSize; x++) {
-          const idx = (y * internalSize + x) * 4;
-          // Mix of noise and wave pattern for interesting animation
-          const wave =
-            Math.sin((x + frame * 0.5) * 0.2) *
-            Math.cos((y + frame * 0.3) * 0.2);
-          const noise = Math.random();
-          const combined = (wave * 0.5 + 0.5) * 0.6 + noise * 0.4;
-          const value = combined > 0.5 ? 255 : 0;
+        const imageData = ctx.createImageData(internalSize, internalSize);
+        const data = imageData.data;
+
+        // Pick a random base pattern and add sparkle variation
+        const basePattern =
+          patterns[Math.floor(Math.random() * patterns.length)];
+
+        for (let i = 0; i < internalSize * internalSize; i++) {
+          const idx = i * 4;
+          // Base pattern with random sparkle flips
+          const sparkle = Math.random() < 0.15; // 15% chance to flip
+          const isWhite = sparkle ? !basePattern[i] : basePattern[i];
+          const value = isWhite ? 255 : 0;
 
           data[idx] = value;
           data[idx + 1] = value;
           data[idx + 2] = value;
           data[idx + 3] = 255;
         }
-      }
 
-      ctx.putImageData(imageData, 0, 0);
+        ctx.putImageData(imageData, 0, 0);
+      }
       animationId = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationId = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(animationId);
   }, [internalSize]);
@@ -59,7 +72,7 @@ function DitherLoader({ size = 32 }: { size?: number }) {
       ref={canvasRef}
       width={internalSize}
       height={internalSize}
-      style={{ width: size, height: size, imageRendering: "pixelated" }}
+      style={{ width: size, height: size }}
     />
   );
 }
