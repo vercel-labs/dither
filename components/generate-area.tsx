@@ -53,15 +53,15 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Model Selection */}
-      <div className="h-10 flex flex-wrap justify-center items-center gap-4">
+      <div className="min-h-10 flex flex-wrap justify-center items-center gap-2 sm:gap-4">
         {aiModels.map((model) => (
           <button
             key={model.id}
             onClick={() => setSelectedModel(model.id)}
-            className={`text-[10px] tracking-[0.2em] uppercase px-4 py-2 border transition-colors ${
+            className={`text-[9px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase px-3 sm:px-4 py-2 border transition-colors ${
               selectedModel === model.id
                 ? "border-black bg-black text-white"
-                : "border-black/20 text-black/40 hover:border-black/40 hover:text-black/60"
+                : "border-black/20 text-black/40 hover:border-black/40 hover:text-black/60 active:border-black active:text-black"
             }`}
           >
             {model.name}
@@ -87,7 +87,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
         {/* Error - fixed height container */}
         <div className="h-6 flex items-center justify-center mt-4">
           {error && (
-            <p className="text-[10px] tracking-[0.2em] uppercase text-red-600">
+            <p className="text-[10px] tracking-[0.2em] uppercase text-red-600 px-4 text-center">
               {error}
             </p>
           )}
@@ -100,7 +100,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
           onClick={handleGenerate}
           disabled={!prompt.trim() || isGenerating}
           className="text-[10px] tracking-[0.3em] uppercase px-8 py-3 border border-black 
-            bg-black text-white hover:bg-transparent hover:text-black transition-colors
+            bg-black text-white hover:bg-transparent hover:text-black active:bg-transparent active:text-black transition-colors
             disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {isGenerating ? "Generating..." : "Generate"}
@@ -109,4 +109,3 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
     </div>
   );
 }
-

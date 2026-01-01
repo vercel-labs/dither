@@ -88,19 +88,19 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+    <div className="min-h-screen bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
 
-      <Header showReset={!!originalImage} onReset={handleReset} />
+      <Header />
 
-      <main className="h-[calc(100vh-56px)] flex">
-        {/* Left Panel */}
-        <div className="flex-1 flex items-center justify-center p-8 overflow-hidden">
+      <main className="min-h-[calc(100vh-56px)] flex flex-col lg:flex-row">
+        {/* Main Panel */}
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
           {!originalImage ? (
             <div className="w-full max-w-lg flex flex-col items-center">
               <ModeToggle mode={inputMode} onModeChange={setInputMode} />
 
-              <div className="w-full h-[320px] flex flex-col">
+              <div className="w-full h-[280px] sm:h-[320px] flex flex-col">
                 {inputMode === "upload" ? (
                   <UploadArea onFileSelect={handleFile} />
                 ) : (
@@ -116,7 +116,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Right Panel */}
+        {/* Controls Panel */}
         <ControlsPanel
           options={options}
           onOptionsChange={setOptions}

@@ -7,7 +7,7 @@ interface ImagePreviewProps {
 
 export function ImagePreview({ src, isProcessing }: ImagePreviewProps) {
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
       {isProcessing && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#fafafa]/80 z-10">
           <span className="text-[10px] tracking-[0.3em] uppercase text-black/40">
@@ -18,9 +18,8 @@ export function ImagePreview({ src, isProcessing }: ImagePreviewProps) {
       <img
         src={src}
         alt="Dithered"
-        className="max-w-full max-h-full object-contain"
+        className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain"
       />
     </div>
   );
 }
-
