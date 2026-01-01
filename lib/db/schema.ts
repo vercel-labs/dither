@@ -60,6 +60,7 @@ export const dithers = pgTable("dithers", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
+  title: text("title"),
   prompt: text("prompt"),
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

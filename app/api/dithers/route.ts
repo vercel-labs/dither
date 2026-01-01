@@ -4,6 +4,10 @@ import { dithers } from "@/lib/db/schema";
 import { uploadImage } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import {
+  generateTitleFromPrompt,
+  generateTitleFromImage,
+} from "@/lib/generate-title";
 
 export async function POST(request: Request) {
   try {
@@ -31,12 +35,21 @@ export async function POST(request: Request) {
     // Upload the image to storage
     const imageUrl = await uploadImage(imageData, `${id}.png`);
 
+    // Generate title based on whether we have a prompt (generated) or not (uploaded)
+    let title: string;
+    if (prompt) {
+      title = await generateTitleFromPrompt(prompt);
+    } else {
+      title = await generateTitleFromImage(imageData);
+    }
+
     // Create the dither record
     const [dither] = await db
       .insert(dithers)
       .values({
         id,
         userId: session.user.id,
+        title,
         prompt: prompt || null,
         imageUrl,
       })

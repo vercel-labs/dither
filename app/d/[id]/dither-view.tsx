@@ -19,12 +19,14 @@ import { ControlsPanel } from "@/components/controls-panel";
 interface DitherViewProps {
   id: string;
   imageUrl: string;
+  title: string | null;
   prompt: string | null;
 }
 
 export function DitherView({
   id,
   imageUrl,
+  title,
   prompt: initialPrompt,
 }: DitherViewProps) {
   // Atoms
@@ -125,7 +127,12 @@ export function DitherView({
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}
-        <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden">
+          {title && (
+            <h1 className="text-lg sm:text-xl tracking-wide mb-4 text-center">
+              {title}
+            </h1>
+          )}
           <ImagePreview />
         </div>
 

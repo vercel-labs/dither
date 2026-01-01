@@ -23,6 +23,7 @@ export default async function DitherPage({ params }: DitherPageProps) {
     <DitherView
       id={dither.id}
       imageUrl={dither.imageUrl}
+      title={dither.title}
       prompt={dither.prompt}
     />
   );
