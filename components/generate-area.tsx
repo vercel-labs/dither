@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 const aiModels = [
   { id: "bfl/flux-kontext-max", name: "FLUX MAX" },
@@ -18,6 +18,16 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
   const [selectedModel, setSelectedModel] = useState(aiModels[0].id);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-expand textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [prompt]);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
@@ -72,13 +82,14 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
       {/* Prompt */}
       <div className="flex-1 flex flex-col justify-center">
         <textarea
+          ref={textareaRef}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe your image..."
-          rows={3}
-          className="w-full px-0 py-4 bg-transparent border-0 border-b border-black/20 
+          rows={1}
+          className="w-full px-3 py-4 bg-transparent border-0 border-b border-black/20 
             text-base font-serif placeholder:text-black/30 focus:outline-none focus:border-black
-            resize-none text-center"
+            resize-none text-left overflow-hidden"
           onKeyDown={(e) => {
             if (e.key === "Enter" && e.metaKey && !isGenerating) handleGenerate();
           }}
