@@ -21,7 +21,7 @@ export function Slider({
 }: SliderProps) {
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-[10px] tracking-[0.2em] uppercase">
+      <div className="flex justify-between text-[10px]">
         <span className="text-black/40">{label}</span>
         <span className="text-black/60 font-mono">{formatValue(value)}</span>
       </div>

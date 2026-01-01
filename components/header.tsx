@@ -83,7 +83,7 @@ export function Header() {
       <div className="px-4 sm:px-8 h-full flex items-center justify-between">
         <a
           href="/"
-          className="text-xs tracking-[0.3em] uppercase hover:text-black/60 transition-colors"
+          className="text-xs tracking-[0.3em] hover:text-black/60 transition-colors"
         >
           Dither
         </a>
@@ -93,9 +93,9 @@ export function Header() {
             href="https://github.com/vercel-labs/dither"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs tracking-wide text-black/60 hover:text-black transition-colors"
+            className="text-xs hover:text-black/60 transition-colors"
           >
-            GITHUB
+            GitHub
           </a>
           {isPending || signingIn ? (
             <div className="text-black/40">
@@ -109,9 +109,9 @@ export function Header() {
                   e.stopPropagation();
                   setMenuOpen(!menuOpen);
                 }}
-                className="flex items-center gap-1 text-xs tracking-wide hover:text-black/60 transition-colors"
+                className="flex items-center gap-1 text-xs hover:text-black/60 transition-colors"
               >
-                <span className="uppercase">{user?.name || "USER"}</span>
+                {user?.name || "User"}
                 <ChevronDown className="w-3 h-3" />
               </button>
 
@@ -137,9 +137,9 @@ export function Header() {
             providers.length === 1 ? (
               <button
                 onClick={() => handleSignIn(providers[0])}
-                className="text-xs tracking-wide hover:text-black/60 transition-colors"
+                className="text-xs hover:text-black/60 transition-colors"
               >
-                SIGN IN
+                Sign In
               </button>
             ) : (
               <div className="relative">
@@ -148,9 +148,9 @@ export function Header() {
                     e.stopPropagation();
                     setProviderMenuOpen(!providerMenuOpen);
                   }}
-                  className="text-xs tracking-wide hover:text-black/60 transition-colors flex items-center gap-1"
+                  className="text-xs hover:text-black/60 transition-colors flex items-center gap-1"
                 >
-                  SIGN IN
+                  Sign In
                   <ChevronDown className="w-3 h-3" />
                 </button>
 

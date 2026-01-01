@@ -13,11 +13,11 @@ import {
 } from "@/lib/atoms";
 
 const algorithms: { value: DitherAlgorithm; label: string }[] = [
-  { value: "floyd-steinberg", label: "FLOYD-STEINBERG" },
-  { value: "atkinson", label: "ATKINSON" },
-  { value: "ordered", label: "ORDERED" },
-  { value: "bayer", label: "BAYER" },
-  { value: "threshold", label: "THRESHOLD" },
+  { value: "floyd-steinberg", label: "Floyd-Steinberg" },
+  { value: "atkinson", label: "Atkinson" },
+  { value: "ordered", label: "Ordered" },
+  { value: "bayer", label: "Bayer" },
+  { value: "threshold", label: "Threshold" },
 ];
 
 interface ControlsPanelProps {
@@ -48,9 +48,7 @@ export function ControlsPanel({
       <div className="lg:hidden space-y-6">
         {/* Algorithm - horizontal scroll on mobile */}
         <div className="space-y-3">
-          <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">
-            Algorithm
-          </h3>
+          <h3 className="text-[10px] text-black/40">Algorithm</h3>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-8 sm:px-8">
             {algorithms.map((algo) => (
               <button
@@ -58,7 +56,7 @@ export function ControlsPanel({
                 onClick={() =>
                   setOptions({ ...options, algorithm: algo.value })
                 }
-                className={`flex-shrink-0 text-[10px] tracking-[0.15em] uppercase px-3 py-2 border transition-colors ${
+                className={`flex-shrink-0 text-[10px] px-3 py-2 border transition-colors ${
                   options.algorithm === algo.value
                     ? "border-black bg-black text-white"
                     : "border-black/20 text-black/40 active:border-black active:text-black"
@@ -115,7 +113,7 @@ export function ControlsPanel({
           <button
             onClick={onSave}
             disabled={!canSave || isSaving}
-            className="flex-1 text-[10px] tracking-[0.3em] uppercase py-3 border border-black 
+            className="flex-1 text-[10px] py-3 border border-black 
               bg-black text-white active:bg-transparent active:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -124,14 +122,14 @@ export function ControlsPanel({
           <button
             onClick={onDownload}
             disabled={!canDownload}
-            className="text-[10px] tracking-[0.3em] uppercase px-4 py-3 
+            className="text-[10px] px-4 py-3 
               text-black/40 active:text-black transition-colors"
           >
             Download
           </button>
           <button
             onClick={onResetSettings}
-            className="text-[10px] tracking-[0.3em] uppercase px-4 py-3 
+            className="text-[10px] px-4 py-3 
               text-black/40 active:text-black transition-colors"
           >
             Reset
@@ -144,9 +142,7 @@ export function ControlsPanel({
         <div className="flex-1 space-y-10 overflow-y-auto">
           {/* Algorithm */}
           <div className="space-y-4">
-            <h3 className="text-[10px] tracking-[0.3em] uppercase text-black/40">
-              Algorithm
-            </h3>
+            <h3 className="text-[10px] text-black/40">Algorithm</h3>
             <div className="space-y-2">
               {algorithms.map((algo) => (
                 <button
@@ -154,7 +150,7 @@ export function ControlsPanel({
                   onClick={() =>
                     setOptions({ ...options, algorithm: algo.value })
                   }
-                  className={`block w-full text-left text-xs tracking-[0.15em] py-2 transition-colors ${
+                  className={`block w-full text-left text-xs py-2 transition-colors ${
                     options.algorithm === algo.value
                       ? "text-black"
                       : "text-black/30 hover:text-black/60"
@@ -212,7 +208,7 @@ export function ControlsPanel({
           <button
             onClick={onSave}
             disabled={!canSave || isSaving}
-            className="w-full text-[10px] tracking-[0.3em] uppercase py-3 border border-black 
+            className="w-full text-[10px] py-3 border border-black 
               bg-black text-white hover:bg-transparent hover:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -221,7 +217,7 @@ export function ControlsPanel({
           <button
             onClick={onDownload}
             disabled={!canDownload}
-            className="w-full text-[10px] tracking-[0.3em] uppercase py-3 border border-black/20
+            className="w-full text-[10px] py-3 border border-black/20
               text-black/60 hover:border-black hover:text-black transition-colors
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -229,7 +225,7 @@ export function ControlsPanel({
           </button>
           <button
             onClick={onResetSettings}
-            className="w-full text-[10px] tracking-[0.3em] uppercase py-3 
+            className="w-full text-[10px] py-3 
               text-black/40 hover:text-black transition-colors"
           >
             Reset Settings

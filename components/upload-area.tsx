@@ -38,7 +38,7 @@ export function UploadArea({ onFileSelect }: UploadAreaProps) {
         ${isDragging ? "border-black bg-black/[0.02]" : "border-black/20 hover:border-black/40"}
       `}
     >
-      <span className="text-[10px] tracking-[0.3em] uppercase text-black/40">
+      <span className="text-[10px] text-black/40">
         {isDragging ? "Drop" : "Select Image"}
       </span>
       <input
