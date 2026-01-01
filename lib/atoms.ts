@@ -1,7 +1,9 @@
 "use client";
 
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { defaultOptions, type DitherOptions } from "./dither";
+import { createCookieStorage } from "./cookie-storage";
 
 // =============================================================================
 // User & Auth Atoms
@@ -74,7 +76,11 @@ export const scaleAtom = atom(
 
 export type InputMode = "upload" | "generate";
 
-export const inputModeAtom = atom<InputMode>("upload");
+export const inputModeAtom = atomWithStorage<InputMode>(
+  "input-mode",
+  "upload",
+  createCookieStorage<InputMode>(),
+);
 export const isProcessingAtom = atom(false);
 export const isSavingAtom = atom(false);
 export const promptAtom = atom<string | null>(null);
@@ -93,7 +99,11 @@ export const aiModels = [
 export type AiModelId = (typeof aiModels)[number]["id"];
 
 export const selectedModelAtom = atom<AiModelId>(aiModels[0].id);
-export const generatePromptAtom = atom("");
+export const generatePromptAtom = atomWithStorage<string>(
+  "generate-prompt",
+  "",
+  createCookieStorage<string>(),
+);
 export const isGeneratingAtom = atom(false);
 export const generateErrorAtom = atom<string | null>(null);
 

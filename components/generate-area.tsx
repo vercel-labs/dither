@@ -51,6 +51,7 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
       const data = await response.json();
       if (data.image?.url) {
         onImageGenerated(data.image.url, prompt.trim());
+        setPrompt(""); // Clear prompt after successful generation
       } else {
         throw new Error("No image returned");
       }

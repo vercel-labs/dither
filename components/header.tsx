@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
@@ -21,6 +21,100 @@ function LoadingIndicator() {
         />
       ))}
     </div>
+  );
+}
+
+// Dithered avatar component - uses higher internal resolution for better dithering
+function DitheredAvatar({ src, size = 32 }: { src: string; size?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const applyDither = useCallback(
+    (img: HTMLImageElement) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Use higher internal resolution for better dithering detail
+      const internalSize = size * 2;
+      canvas.width = internalSize;
+      canvas.height = internalSize;
+
+      // Draw image at higher resolution
+      ctx.drawImage(img, 0, 0, internalSize, internalSize);
+
+      // Get image data
+      const imageData = ctx.getImageData(0, 0, internalSize, internalSize);
+      const data = imageData.data;
+
+      // Convert to grayscale with contrast boost
+      const grayscale = new Float32Array(internalSize * internalSize);
+      const contrast = 1.3;
+      const brightness = 5;
+
+      for (let i = 0; i < internalSize * internalSize; i++) {
+        const idx = i * 4;
+        let gray =
+          0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        gray = gray + brightness;
+        gray = (gray - 128) * contrast + 128;
+        grayscale[i] = Math.max(0, Math.min(255, gray));
+      }
+
+      // Floyd-Steinberg dithering - better for faces
+      const errors = new Float32Array(grayscale);
+      const output = new Uint8ClampedArray(internalSize * internalSize);
+      const threshold = 128;
+
+      for (let y = 0; y < internalSize; y++) {
+        for (let x = 0; x < internalSize; x++) {
+          const idx = y * internalSize + x;
+          const oldPixel = errors[idx];
+          const newPixel = oldPixel < threshold ? 0 : 255;
+          output[idx] = newPixel;
+          const error = oldPixel - newPixel;
+
+          if (x + 1 < internalSize) {
+            errors[idx + 1] += error * (7 / 16);
+          }
+          if (y + 1 < internalSize) {
+            if (x > 0) errors[idx + internalSize - 1] += error * (3 / 16);
+            errors[idx + internalSize] += error * (5 / 16);
+            if (x + 1 < internalSize)
+              errors[idx + internalSize + 1] += error * (1 / 16);
+          }
+        }
+      }
+
+      // Write back to image data
+      for (let i = 0; i < internalSize * internalSize; i++) {
+        const value = output[i];
+        data[i * 4] = value;
+        data[i * 4 + 1] = value;
+        data[i * 4 + 2] = value;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      setLoaded(true);
+    },
+    [size],
+  );
+
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => applyDither(img);
+    img.src = src;
+  }, [src, applyDither]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      style={{ width: size, height: size, imageRendering: "pixelated" }}
+    />
   );
 }
 
@@ -109,10 +203,18 @@ export function Header() {
                   e.stopPropagation();
                   setMenuOpen(!menuOpen);
                 }}
-                className="flex items-center gap-1 text-xs hover:text-black/60 transition-colors"
+                className="flex items-center hover:opacity-60 transition-opacity"
               >
-                {user?.name || "User"}
-                <ChevronDown className="w-3 h-3" />
+                {user?.image ? (
+                  <DitheredAvatar src={user.image} size={32} />
+                ) : (
+                  <div
+                    className="bg-black text-white text-[11px] font-medium flex items-center justify-center"
+                    style={{ width: 32, height: 32 }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                )}
               </button>
 
               {menuOpen && (
