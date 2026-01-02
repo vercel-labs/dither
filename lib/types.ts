@@ -8,4 +8,5 @@ export interface DitherItem {
   userId: string;
   userName: string | null;
   userImage: string | null;
+  userCustomAvatar: string | null;
 }

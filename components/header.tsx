@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
-import { userAtom, providersAtom } from "@/lib/atoms";
+import {
+  userAtom,
+  providersAtom,
+  currentUserIdAtom,
+  currentUserCustomAvatarAtom,
+} from "@/lib/atoms";
 import { AvatarEditor } from "./avatar-editor";
 import type { Visibility } from "@/lib/db/schema";
 
@@ -161,7 +166,6 @@ function DitherLoader({ size = 24 }: { size?: number }) {
       ref={canvasRef}
       width={internalSize}
       height={internalSize}
-      className="border border-black"
       style={{ width: size, height: size, imageRendering: "pixelated" }}
     />
   );
@@ -264,7 +268,7 @@ function DitheredAvatar({
   return (
     <canvas
       ref={canvasRef}
-      className={`border border-black ${loaded ? "opacity-100" : "opacity-0"}`}
+      className={loaded ? "opacity-100" : "opacity-0"}
       style={{ width: size, height: size, imageRendering: "pixelated" }}
     />
   );
@@ -304,24 +308,61 @@ export function Header({
 }: HeaderProps = {}) {
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
+  const setCurrentUserId = useSetAtom(currentUserIdAtom);
+  const setGlobalCustomAvatar = useSetAtom(currentUserCustomAvatarAtom);
   const { data: session, isPending } = useSession();
   const [signingIn, setSigningIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
-  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
+  const [customAvatar, setCustomAvatarLocal] = useState<string | null>(null);
+  const [avatarSettings, setAvatarSettings] = useState<{
+    threshold: number;
+    contrast: number;
+    brightness: number;
+  } | null>(null);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
+
+  const setCustomAvatar = useCallback(
+    (avatar: string | null) => {
+      setCustomAvatarLocal(avatar);
+      setGlobalCustomAvatar(avatar);
+    },
+    [setGlobalCustomAvatar],
+  );
 
   const user = session?.user ?? initialUser;
   const isSignedIn = !!user;
   const isLoading = signingIn || (isPending && !initialUser);
 
-  // Load custom avatar from localStorage
+  // Load custom avatar from database
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("dither-avatar");
-      if (saved) setCustomAvatar(saved);
+    if (!isSignedIn) {
+      setAvatarLoaded(false);
+      setGlobalCustomAvatar(null);
+      return;
     }
-  }, []);
+
+    const fetchAvatarSettings = async () => {
+      try {
+        const response = await fetch("/api/avatar");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.customAvatar) {
+            setCustomAvatarLocal(data.customAvatar);
+            setGlobalCustomAvatar(data.customAvatar);
+          }
+          if (data.settings) setAvatarSettings(data.settings);
+        }
+      } catch (error) {
+        console.error("Error fetching avatar settings:", error);
+      } finally {
+        setAvatarLoaded(true);
+      }
+    };
+
+    fetchAvatarSettings();
+  }, [isSignedIn, setGlobalCustomAvatar]);
 
   useEffect(() => {
     if (session?.user) {
@@ -329,8 +370,11 @@ export function Header({
         name: session.user.name ?? null,
         image: session.user.image ?? null,
       });
+      setCurrentUserId(session.user.id);
+    } else {
+      setCurrentUserId(null);
     }
-  }, [session, setUser]);
+  }, [session, setUser, setCurrentUserId]);
 
   const handleSignIn = (provider: string) => {
     setSigningIn(true);
@@ -344,16 +388,38 @@ export function Header({
     setUser(null);
   };
 
-  const handleAvatarSave = useCallback((dataUrl: string) => {
-    setCustomAvatar(dataUrl);
-    localStorage.setItem("dither-avatar", dataUrl);
-    setShowAvatarEditor(false);
-  }, []);
+  const handleAvatarSave = useCallback(
+    async (
+      dataUrl: string,
+      settings: { threshold: number; contrast: number; brightness: number },
+    ) => {
+      setCustomAvatar(dataUrl);
+      setAvatarSettings(settings);
+      setShowAvatarEditor(false);
 
-  const handleResetAvatar = useCallback(() => {
+      try {
+        await fetch("/api/avatar", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customAvatar: dataUrl, settings }),
+        });
+      } catch (error) {
+        console.error("Error saving avatar:", error);
+      }
+    },
+    [],
+  );
+
+  const handleResetAvatar = useCallback(async () => {
     setCustomAvatar(null);
-    localStorage.removeItem("dither-avatar");
+    setAvatarSettings(null);
     setShowAvatarEditor(false);
+
+    try {
+      await fetch("/api/avatar", { method: "DELETE" });
+    } catch (error) {
+      console.error("Error resetting avatar:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -453,7 +519,7 @@ export function Header({
               GITHUB
             </a>
 
-            {isLoading ? (
+            {isLoading || (isSignedIn && !avatarLoaded) ? (
               <DitherLoader size={32} />
             ) : isSignedIn ? (
               <div className="relative flex items-center">
@@ -552,6 +618,7 @@ export function Header({
           onSave={handleAvatarSave}
           onReset={handleResetAvatar}
           hasCustomAvatar={!!customAvatar}
+          initialSettings={avatarSettings}
         />
       )}
     </>

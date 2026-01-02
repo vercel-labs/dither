@@ -4,13 +4,26 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { applyDither } from "@/lib/dither";
 import { Slider } from "./slider";
 
+interface AvatarSettings {
+  threshold: number;
+  contrast: number;
+  brightness: number;
+}
+
 interface AvatarEditorProps {
   src: string;
   onClose: () => void;
-  onSave: (dataUrl: string) => void;
+  onSave: (dataUrl: string, settings: AvatarSettings) => void;
   onReset?: () => void;
   hasCustomAvatar?: boolean;
+  initialSettings?: AvatarSettings | null;
 }
+
+const DEFAULT_SETTINGS: AvatarSettings = {
+  threshold: 128,
+  contrast: 1.3,
+  brightness: 5,
+};
 
 export function AvatarEditor({
   src,
@@ -18,17 +31,16 @@ export function AvatarEditor({
   onSave,
   onReset,
   hasCustomAvatar,
+  initialSettings,
 }: AvatarEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
     null,
   );
   const [processedDataUrl, setProcessedDataUrl] = useState<string | null>(null);
-  const [options, setOptions] = useState({
-    threshold: 128,
-    contrast: 1.3,
-    brightness: 5,
-  });
+  const [options, setOptions] = useState<AvatarSettings>(
+    initialSettings ?? DEFAULT_SETTINGS,
+  );
 
   // Load the original image
   useEffect(() => {
@@ -63,9 +75,9 @@ export function AvatarEditor({
 
   const handleSave = useCallback(() => {
     if (processedDataUrl) {
-      onSave(processedDataUrl);
+      onSave(processedDataUrl, options);
     }
-  }, [processedDataUrl, onSave]);
+  }, [processedDataUrl, onSave, options]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

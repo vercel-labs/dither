@@ -8,6 +8,11 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  // Custom avatar settings
+  customAvatar: text("custom_avatar"),
+  avatarThreshold: text("avatar_threshold"),
+  avatarContrast: text("avatar_contrast"),
+  avatarBrightness: text("avatar_brightness"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

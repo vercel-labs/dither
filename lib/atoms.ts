@@ -12,10 +12,13 @@ import { createCookieStorage } from "./cookie-storage";
 export interface User {
   name: string | null;
   image: string | null;
+  id?: string;
 }
 
 export const userAtom = atom<User | null>(null);
 export const providersAtom = atom<string[]>([]);
+export const currentUserIdAtom = atom<string | null>(null);
+export const currentUserCustomAvatarAtom = atom<string | null>(null);
 
 // =============================================================================
 // Image State Atoms

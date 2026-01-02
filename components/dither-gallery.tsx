@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { userAtom } from "@/lib/atoms";
+import {
+  userAtom,
+  currentUserIdAtom,
+  currentUserCustomAvatarAtom,
+} from "@/lib/atoms";
 import type { DitherItem } from "@/lib/types";
 
 // 8x7 pixel heart pattern
@@ -169,24 +173,38 @@ function VisibilityToggle({
   );
 }
 
-function SmallDitheredAvatar({ src }: { src: string }) {
+function SmallDitheredAvatar({
+  src,
+  customSrc,
+}: {
+  src: string;
+  customSrc?: string | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
       const size = 32;
       canvas.width = size;
       canvas.height = size;
 
+      // If we have a custom avatar, just draw it
+      if (customSrc) {
+        ctx.drawImage(img, 0, 0, size, size);
+        setLoaded(true);
+        return;
+      }
+
+      // Otherwise apply default dithering
       ctx.drawImage(img, 0, 0, size, size);
 
       const imageData = ctx.getImageData(0, 0, size, size);
@@ -205,13 +223,13 @@ function SmallDitheredAvatar({ src }: { src: string }) {
       ctx.putImageData(imageData, 0, 0);
       setLoaded(true);
     };
-    img.src = src;
-  }, [src]);
+    img.src = customSrc || src;
+  }, [src, customSrc]);
 
   return (
     <canvas
       ref={canvasRef}
-      className={`border border-black ${loaded ? "opacity-100" : "opacity-0"}`}
+      className={loaded ? "opacity-100" : "opacity-0"}
       style={{ width: 16, height: 16, imageRendering: "pixelated" }}
     />
   );
@@ -276,6 +294,15 @@ function DitherCard({
   isFavorited: boolean;
   isOwnDither: boolean;
 }) {
+  const currentUserId = useAtomValue(currentUserIdAtom);
+  const currentUserCustomAvatar = useAtomValue(currentUserCustomAvatarAtom);
+
+  // Use the global custom avatar for the current user's dithers
+  const customAvatar =
+    dither.userId === currentUserId
+      ? currentUserCustomAvatar
+      : dither.userCustomAvatar;
+
   return (
     <div className="flex flex-col">
       {/* Header row */}
@@ -283,9 +310,12 @@ function DitherCard({
         {showUser && (
           <Link href={`/u/${dither.userId}`}>
             {dither.userImage ? (
-              <SmallDitheredAvatar src={dither.userImage} />
+              <SmallDitheredAvatar
+                src={dither.userImage}
+                customSrc={customAvatar}
+              />
             ) : (
-              <div className="w-4 h-4 border border-black flex items-center justify-center bg-black text-white font-mono text-[8px]">
+              <div className="w-4 h-4 flex items-center justify-center bg-black text-white font-mono text-[8px]">
                 {dither.userName?.charAt(0).toUpperCase() || "?"}
               </div>
             )}

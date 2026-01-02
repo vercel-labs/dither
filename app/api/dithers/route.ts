@@ -155,7 +155,7 @@ export async function POST(request: Request) {
 
     if (isGenerateRequest) {
       // Create a pending dither and start background generation
-      const { id, prompt, modelId } = body;
+      const { id, prompt, modelId, visibility = "private" } = body;
 
       if (!id) {
         return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -185,6 +185,7 @@ export async function POST(request: Request) {
           userId: session.user.id,
           prompt,
           modelId,
+          visibility,
           status: "pending",
           threshold: "255",
           contrast: "2",

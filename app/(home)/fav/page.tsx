@@ -22,6 +22,7 @@ async function getFavorites(
         userId: dithers.userId,
         userName: users.name,
         userImage: users.image,
+        userCustomAvatar: users.customAvatar,
       })
       .from(favorites)
       .innerJoin(dithers, eq(favorites.ditherId, dithers.id))

@@ -18,6 +18,7 @@ async function getPublicDithers(): Promise<DitherItem[]> {
       userId: dithers.userId,
       userName: users.name,
       userImage: users.image,
+      userCustomAvatar: users.customAvatar,
     })
     .from(dithers)
     .leftJoin(users, eq(dithers.userId, users.id))
