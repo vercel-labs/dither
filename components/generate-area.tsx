@@ -105,7 +105,7 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
           placeholder="DESCRIBE YOUR IMAGE..."
           rows={1}
           enterKeyHint="send"
-          className="w-full px-3 py-3 text-sm bg-transparent placeholder:text-black/30 focus:outline-none resize-none min-h-[44px] max-h-[120px] font-mono"
+          className="w-full px-3 py-3 text-base md:text-sm bg-transparent placeholder:text-black/30 focus:outline-none resize-none min-h-[44px] max-h-[120px] font-mono"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !isGenerating) {
               e.preventDefault();
