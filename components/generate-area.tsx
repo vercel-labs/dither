@@ -13,6 +13,7 @@ import {
   userAtom,
   providersAtom,
 } from "@/lib/atoms";
+import { randomPrompts } from "@/constants/random";
 
 interface GenerateAreaProps {
   onGenerate: (
@@ -93,6 +94,13 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
     signIn.social({ provider });
   };
 
+  const handleRandom = useCallback(() => {
+    const randomPrompt =
+      randomPrompts[Math.floor(Math.random() * randomPrompts.length)];
+    setPrompt(randomPrompt);
+    textareaRef.current?.focus();
+  }, [setPrompt]);
+
   const selectedModelName =
     aiModels.find((m) => m.id === selectedModel)?.name || "Model";
 
@@ -163,13 +171,22 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
             </button>
           </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={!prompt.trim() || isGenerating}
-            className="font-mono text-xs px-4 py-1 bg-black text-white disabled:opacity-30"
-          >
-            {isGenerating ? "..." : "GENERATE"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRandom}
+              disabled={isGenerating}
+              className="font-mono text-xs px-4 py-1 text-black/50 disabled:opacity-30 hover:text-black transition-colors"
+            >
+              RANDOM
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={!prompt.trim() || isGenerating}
+              className="font-mono text-xs px-4 py-1 bg-black text-white disabled:opacity-30"
+            >
+              {isGenerating ? "..." : "GENERATE"}
+            </button>
+          </div>
         </div>
       </div>
 
