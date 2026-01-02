@@ -34,12 +34,23 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isInitialMount = useRef(true);
 
-  // Focus textarea and move cursor to end on mount
+  // Focus textarea only on fresh page load, not on back navigation
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.focus();
-      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    // Check if this is a back/forward navigation
+    const navEntries = performance.getEntriesByType(
+      "navigation",
+    ) as PerformanceNavigationTiming[];
+    const isBackForward = navEntries[0]?.type === "back_forward";
+
+    if (!isBackForward) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(
+          textarea.value.length,
+          textarea.value.length,
+        );
+      }
     }
   }, []);
 

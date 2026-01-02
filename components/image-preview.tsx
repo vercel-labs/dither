@@ -2,21 +2,31 @@
 
 import { useAtomValue } from "jotai";
 import { useRef, useState, useCallback, useEffect } from "react";
-import {
-  processedDataUrlAtom,
-  originalDataUrlAtom,
-  isProcessingAtom,
-} from "@/lib/atoms";
+import { processedDataUrlAtom, isProcessingAtom } from "@/lib/atoms";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 5;
 
 export function ImagePreview() {
   const processedDataUrl = useAtomValue(processedDataUrlAtom);
-  const originalDataUrl = useAtomValue(originalDataUrlAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  const src = processedDataUrl || originalDataUrl;
+  // Only show processed/dithered image, never the original
+  const src = processedDataUrl;
+
+  // Reset loaded state when src changes, but check if already complete
+  useEffect(() => {
+    setImageLoaded(false);
+    // Check after a microtask if image is already complete (for data URLs)
+    const timer = setTimeout(() => {
+      if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+        setImageLoaded(true);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [src]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -263,12 +273,30 @@ export function ImagePreview() {
           </span>
         </div>
       )}
+      {!src && !isProcessing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-mono text-[10px] text-black/40 animate-blink">
+            LOADING...
+          </span>
+        </div>
+      )}
+      {src && !imageLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-mono text-[10px] text-black/40 animate-blink">
+            LOADING...
+          </span>
+        </div>
+      )}
       {src && (
         <img
+          ref={imgRef}
           src={src}
           alt="Dithered"
-          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none border border-black"
+          className={`max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none border border-black transition-opacity ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
           draggable={false}
+          onLoad={() => setImageLoaded(true)}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             imageRendering: "pixelated",

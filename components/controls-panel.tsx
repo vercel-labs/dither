@@ -14,6 +14,7 @@ interface ControlsPanelProps {
   onDownload: () => void;
   saveLabel?: string;
   alwaysEnableSave?: boolean;
+  forceShow?: boolean;
 }
 
 export function ControlsPanel({
@@ -21,6 +22,7 @@ export function ControlsPanel({
   onDownload,
   saveLabel = "Save",
   alwaysEnableSave = false,
+  forceShow = false,
 }: ControlsPanelProps) {
   const [options, setOptions] = useAtom(ditherOptionsAtom);
   const hasImage = useAtomValue(hasImageAtom);
@@ -28,7 +30,7 @@ export function ControlsPanel({
   const canSave = alwaysEnableSave || canSaveAtomValue;
   const isSaving = useAtomValue(isSavingAtom);
 
-  if (!hasImage) return null;
+  if (!hasImage && !forceShow) return null;
 
   return (
     <div className="w-full lg:w-56 border-t lg:border-t-0 lg:border-l border-black/20 bg-[#fafafa] p-4 shrink-0">

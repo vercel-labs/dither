@@ -28,10 +28,12 @@ export const originalImageAtom = atom<HTMLImageElement | null>(null);
 export const originalDataUrlAtom = atom<string | null>(null);
 export const processedDataUrlAtom = atom<string | null>(null);
 
-// Derived atom: has image loaded (check both original and processed)
+// Derived atom: has image (check original URL, original image element, or processed)
 export const hasImageAtom = atom(
   (get) =>
-    get(originalImageAtom) !== null || get(processedDataUrlAtom) !== null,
+    get(originalDataUrlAtom) !== null ||
+    get(originalImageAtom) !== null ||
+    get(processedDataUrlAtom) !== null,
 );
 
 // =============================================================================

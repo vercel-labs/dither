@@ -58,11 +58,23 @@ async function generateAndProcessImage(
   modelId: string,
 ) {
   try {
+    // Generate title first (fast) and update immediately so it shows during generation
+    const titlePromise = generateTitleFromPrompt(prompt);
+
     // Update status to generating
     await db
       .update(dithers)
       .set({ status: "generating" as DitherStatus, updatedAt: new Date() })
       .where(eq(dithers.id, id));
+
+    // Wait for title and update it right away
+    const title = await titlePromise;
+    await db
+      .update(dithers)
+      .set({ title, updatedAt: new Date() })
+      .where(eq(dithers.id, id));
+
+    console.log(`[${id}] Title generated: "${title}"`);
 
     const enhancedPrompt = prompt.trim() + STYLE_SUFFIX;
     console.log(
@@ -106,14 +118,10 @@ async function generateAndProcessImage(
     // The dithered version will be saved when the client first views it
     await uploadImage(imageUrl, `${id}-original.png`);
 
-    // Generate title from prompt
-    const title = await generateTitleFromPrompt(prompt);
-
     // Update the dither record - imageUrl stays null until client saves dithered version
     await db
       .update(dithers)
       .set({
-        title,
         status: "ready" as DitherStatus,
         updatedAt: new Date(),
       })

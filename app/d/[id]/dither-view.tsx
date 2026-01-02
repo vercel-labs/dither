@@ -1,6 +1,12 @@
 "use client";
 
-import { useRef, useCallback, useEffect, useState } from "react";
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { userAtom } from "@/lib/atoms";
@@ -14,6 +20,7 @@ import {
   isProcessingAtom,
   isSavingAtom,
   promptAtom,
+  resetImageAtom,
 } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { ImagePreview } from "@/components/image-preview";
@@ -28,6 +35,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DownloadDialog,
+  type DownloadOptions,
+} from "@/components/download-dialog";
 import { getOriginalImageUrl } from "@/lib/url";
 import type { Visibility, DitherStatus } from "@/lib/db/schema";
 
@@ -79,11 +90,24 @@ export function DitherView({
   const setIsProcessing = useSetAtom(isProcessingAtom);
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const setPrompt = useSetAtom(promptAtom);
+  const resetImage = useSetAtom(resetImageAtom);
+
+  // Track which dither ID we've initialized for
+  const [initializedForId, setInitializedForId] = useState<string | null>(null);
+
+  // Reset image state when navigating to a new dither (useLayoutEffect to prevent flash)
+  useLayoutEffect(() => {
+    if (initializedForId !== id) {
+      resetImage();
+      setInitializedForId(id);
+    }
+  }, [id, initializedForId, resetImage]);
 
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   const user = useAtomValue(userAtom);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -279,13 +303,189 @@ export function DitherView({
     }
   }, [options, originalImage, processImage, status]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownloadClick = useCallback(() => {
     if (!processedDataUrl) return;
-    const link = document.createElement("a");
-    link.download = `dither-${id}.png`;
-    link.href = processedDataUrl;
-    link.click();
-  }, [processedDataUrl, id]);
+    setShowDownloadDialog(true);
+  }, [processedDataUrl]);
+
+  const handleDownload = useCallback(
+    async (downloadOptions: DownloadOptions) => {
+      if (!originalImage) return;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = originalImage.width;
+      canvas.height = originalImage.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return;
+
+      // Draw and dither the image using current dither options
+      ctx.drawImage(originalImage, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const dithered = applyDither(imageData, options);
+      ctx.putImageData(dithered, 0, 0);
+
+      // Apply transparency if selected (convert white pixels to transparent)
+      if (downloadOptions.transparent) {
+        const transparentData = ctx.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        const data = transparentData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          // If pixel is white (255, 255, 255), make it transparent
+          if (data[i] === 255 && data[i + 1] === 255 && data[i + 2] === 255) {
+            data[i + 3] = 0; // Set alpha to 0
+          }
+        }
+        ctx.putImageData(transparentData, 0, 0);
+      }
+
+      const filename = title || `dither-${id}`;
+      const link = document.createElement("a");
+
+      if (downloadOptions.format === "gif") {
+        // Create GIF (no transparency support)
+        const gifDataUrl = await createGIF(canvas);
+        link.download = `${filename}.gif`;
+        link.href = gifDataUrl;
+      } else {
+        // PNG format
+        link.download = `${filename}.png`;
+        link.href = canvas.toDataURL("image/png");
+      }
+
+      link.click();
+    },
+    [originalImage, options, id, title],
+  );
+
+  // Simple GIF encoder for 1-bit images
+  async function createGIF(canvas: HTMLCanvasElement): Promise<string> {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return canvas.toDataURL("image/png");
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+
+    // Build GIF binary data
+    const gif: number[] = [];
+
+    // GIF Header
+    gif.push(0x47, 0x49, 0x46, 0x38, 0x39, 0x61); // GIF89a
+
+    // Logical Screen Descriptor
+    gif.push(width & 0xff, (width >> 8) & 0xff); // Width
+    gif.push(height & 0xff, (height >> 8) & 0xff); // Height
+    gif.push(0x80); // Global color table flag, 1 bit color resolution, sorted flag, size of global color table (2 colors)
+    gif.push(0x00); // Background color index
+    gif.push(0x00); // Pixel aspect ratio
+
+    // Global Color Table (2 colors: black and white)
+    gif.push(0x00, 0x00, 0x00); // Index 0: Black
+    gif.push(0xff, 0xff, 0xff); // Index 1: White
+
+    // Image Descriptor
+    gif.push(0x2c); // Image separator
+    gif.push(0x00, 0x00); // Left position
+    gif.push(0x00, 0x00); // Top position
+    gif.push(width & 0xff, (width >> 8) & 0xff); // Width
+    gif.push(height & 0xff, (height >> 8) & 0xff); // Height
+    gif.push(0x00); // Local color table flag
+
+    // Image Data using LZW compression
+    const minCodeSize = 2; // Minimum LZW code size
+    gif.push(minCodeSize);
+
+    // Convert pixels to indices (0 = black, 1 = white)
+    const indices: number[] = [];
+    for (let i = 0; i < pixels.length; i += 4) {
+      indices.push(pixels[i] === 0 ? 0 : 1);
+    }
+
+    // Simple LZW encoding
+    const lzwEncode = (indices: number[], minCodeSize: number): number[] => {
+      const clearCode = 1 << minCodeSize;
+      const eoiCode = clearCode + 1;
+
+      let codeSize = minCodeSize + 1;
+      let nextCode = eoiCode + 1;
+      const maxCode = 4096;
+
+      const dictionary = new Map<string, number>();
+      for (let i = 0; i < clearCode; i++) {
+        dictionary.set(String(i), i);
+      }
+
+      const output: number[] = [];
+      let bitBuffer = 0;
+      let bitCount = 0;
+
+      const writeBits = (code: number, bits: number) => {
+        bitBuffer |= code << bitCount;
+        bitCount += bits;
+        while (bitCount >= 8) {
+          output.push(bitBuffer & 0xff);
+          bitBuffer >>= 8;
+          bitCount -= 8;
+        }
+      };
+
+      writeBits(clearCode, codeSize);
+
+      let current = String(indices[0]);
+      for (let i = 1; i < indices.length; i++) {
+        const next = current + "," + indices[i];
+        if (dictionary.has(next)) {
+          current = next;
+        } else {
+          writeBits(dictionary.get(current)!, codeSize);
+
+          if (nextCode < maxCode) {
+            dictionary.set(next, nextCode++);
+            if (nextCode > 1 << codeSize && codeSize < 12) {
+              codeSize++;
+            }
+          }
+
+          current = String(indices[i]);
+        }
+      }
+
+      writeBits(dictionary.get(current)!, codeSize);
+      writeBits(eoiCode, codeSize);
+
+      if (bitCount > 0) {
+        output.push(bitBuffer & 0xff);
+      }
+
+      return output;
+    };
+
+    const lzwData = lzwEncode(indices, minCodeSize);
+
+    // Write sub-blocks
+    let offset = 0;
+    while (offset < lzwData.length) {
+      const chunkSize = Math.min(255, lzwData.length - offset);
+      gif.push(chunkSize);
+      for (let i = 0; i < chunkSize; i++) {
+        gif.push(lzwData[offset + i]);
+      }
+      offset += chunkSize;
+    }
+    gif.push(0x00); // Block terminator
+
+    // GIF Trailer
+    gif.push(0x3b);
+
+    // Convert to base64
+    const binary = String.fromCharCode(...gif);
+    return "data:image/gif;base64," + btoa(binary);
+  }
 
   const handleSave = useCallback(async () => {
     if (!processedDataUrl || !isOwner || isSaving) return;
@@ -384,7 +584,7 @@ export function DitherView({
     return (
       <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <Header
-          title={null}
+          title={title}
           visibility={visibility}
           isOwner={isOwner}
           isUpdatingVisibility={false}
@@ -407,7 +607,9 @@ export function DitherView({
             </div>
           </div>
 
-          {isOwner && <ControlsPanel onSave={() => {}} onDownload={() => {}} />}
+          {isOwner && (
+            <ControlsPanel onSave={() => {}} onDownload={() => {}} forceShow />
+          )}
         </main>
       </div>
     );
@@ -417,7 +619,7 @@ export function DitherView({
     return (
       <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <Header
-          title={null}
+          title={title}
           visibility={visibility}
           isOwner={isOwner}
           isUpdatingVisibility={false}
@@ -521,17 +723,23 @@ export function DitherView({
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         <div className="flex-1 min-h-0 flex items-center justify-center p-4">
-          <ImagePreview />
+          {initializedForId === id && <ImagePreview key={id} />}
         </div>
 
         {isOwner && (
           <ControlsPanel
             onSave={handleSave}
-            onDownload={handleDownload}
+            onDownload={handleDownloadClick}
             saveLabel="Save"
             alwaysEnableSave={isOwner}
           />
         )}
+
+        <DownloadDialog
+          open={showDownloadDialog}
+          onOpenChange={setShowDownloadDialog}
+          onDownload={handleDownload}
+        />
       </main>
     </div>
   );
