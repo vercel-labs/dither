@@ -8,7 +8,7 @@ export function getBaseUrl(): string {
 }
 
 // Convert processed image URL to original image URL
-// {id}.png -> {id}-original.png
+// {id}-{hash}-dither.png -> {id}-original.png
 export function getOriginalImageUrl(processedUrl: string): string {
-  return processedUrl.replace(/\.png$/, "-original.png");
+  return processedUrl.replace(/-[a-z0-9]+-dither\.png$/i, "-original.png");
 }

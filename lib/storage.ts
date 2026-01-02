@@ -1,5 +1,5 @@
-import { put } from "@vercel/blob";
-import { writeFile, mkdir } from "fs/promises";
+import { put, del } from "@vercel/blob";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { generateId } from "./id";
 
@@ -41,7 +41,6 @@ export async function uploadImage(
       access: "public",
       contentType: mimeType,
       addRandomSuffix: false,
-      allowOverwrite: true,
     });
     return blob.url;
   } else {
@@ -54,5 +53,35 @@ export async function uploadImage(
 
     // Return a URL that works in development
     return `/uploads/${finalFilename}`;
+  }
+}
+
+/**
+ * Delete an image from storage
+ * @param url - The URL of the image to delete
+ */
+export async function deleteImage(url: string): Promise<void> {
+  if (!url) return;
+
+  if (isVercelBlobConfigured) {
+    // Delete from Vercel Blob
+    try {
+      await del(url);
+    } catch (error) {
+      // Ignore errors if blob doesn't exist
+      console.warn("Failed to delete blob:", error);
+    }
+  } else {
+    // Delete from local filesystem
+    if (url.startsWith("/uploads/")) {
+      const filename = url.replace("/uploads/", "");
+      const filePath = join(process.cwd(), "public", "uploads", filename);
+      try {
+        await unlink(filePath);
+      } catch (error) {
+        // Ignore errors if file doesn't exist
+        console.warn("Failed to delete local file:", error);
+      }
+    }
   }
 }

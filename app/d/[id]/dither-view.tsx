@@ -87,6 +87,7 @@ export function DitherView({
     !initialImageUrl && initialStatus === "ready",
   );
   const hasAutoSavedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
   const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
@@ -292,36 +293,37 @@ export function DitherView({
     return () => clearInterval(pollInterval);
   }, [id, status]);
 
+  // Initialize state on mount (only once per dither)
   useEffect(() => {
     if (status !== "ready") return;
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
 
     if (initialPrompt) setPrompt(initialPrompt);
     setOptions(savedSettings);
 
-    if (imageUrl) {
-      setProcessedDataUrl(imageUrl);
-      setProcessedDitherId(id);
-      const originalUrl = getOriginalImageUrl(imageUrl);
+    const loadOriginalImage = (originalUrl: string) => {
       setOriginalDataUrl(originalUrl);
-
       const img = new window.Image();
       img.crossOrigin = "anonymous";
       img.onload = () => setOriginalImage(img);
       img.src = originalUrl;
+    };
+
+    if (initialImageUrl) {
+      setProcessedDataUrl(initialImageUrl);
+      setProcessedDitherId(id);
+      const originalUrl = getOriginalImageUrl(initialImageUrl);
+      loadOriginalImage(originalUrl);
     } else {
       const originalUrl = getOriginalUrlFromId(id);
-      setOriginalDataUrl(originalUrl);
-
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => setOriginalImage(img);
-      img.src = originalUrl;
+      loadOriginalImage(originalUrl);
     }
   }, [
     status,
-    imageUrl,
     id,
     initialPrompt,
+    initialImageUrl,
     savedSettings,
     setPrompt,
     setOptions,

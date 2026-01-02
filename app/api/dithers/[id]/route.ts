@@ -2,10 +2,17 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { dithers, VISIBILITY_OPTIONS, type Visibility } from "@/lib/db/schema";
-import { uploadImage } from "@/lib/storage";
+import { uploadImage, deleteImage } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
+
+/**
+ * Generate a short hash for cache busting
+ */
+function generateHash(): string {
+  return Date.now().toString(36);
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -57,9 +64,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       updates.visibility = body.visibility;
     }
 
-    // Handle image upload
+    // Handle image upload - delete old processed image and create new one with hash for cache busting
     if (body.imageData) {
-      const imageUrl = await uploadImage(body.imageData, `${id}.png`);
+      // Get existing dither to find old image URL
+      const existingDither = await db.query.dithers.findFirst({
+        where: and(eq(dithers.id, id), eq(dithers.userId, session.user.id)),
+      });
+
+      // Delete old processed image if it exists (only dither images, not originals)
+      if (existingDither?.imageUrl) {
+        await deleteImage(existingDither.imageUrl);
+      }
+
+      // Upload new processed image: {id}-{hash}-dither.png
+      const hash = generateHash();
+      const imageUrl = await uploadImage(
+        body.imageData,
+        `${id}-${hash}-dither.png`,
+      );
       updates.imageUrl = imageUrl;
     }
 

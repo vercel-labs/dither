@@ -234,10 +234,11 @@ export async function POST(request: Request) {
     }
 
     // Upload both images to storage
-    // Original: {id}-original.png, Processed: {id}.png
+    // Original: {id}-original.png, Processed: {id}-{hash}-dither.png
+    const hash = Date.now().toString(36);
     const [, imageUrl] = await Promise.all([
       uploadImage(originalImageData, `${id}-original.png`),
-      uploadImage(processedImageData, `${id}.png`),
+      uploadImage(processedImageData, `${id}-${hash}-dither.png`),
     ]);
 
     // Generate title based on whether we have a prompt (generated) or not (uploaded)
