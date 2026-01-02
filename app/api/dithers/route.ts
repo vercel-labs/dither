@@ -1,4 +1,5 @@
 import { NextResponse, after } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { dithers, users, type DitherStatus } from "@/lib/db/schema";
 import { uploadImage } from "@/lib/storage";
@@ -204,7 +205,14 @@ export async function POST(request: Request) {
       // Start background generation using after()
       after(async () => {
         await generateAndProcessImage(id, prompt, modelId);
+        // Revalidate caches after generation completes
+        revalidateTag("dithers");
+        revalidateTag(`my-dithers-${session.user.id}`);
       });
+
+      // Revalidate caches immediately for pending state
+      revalidateTag("dithers");
+      revalidateTag(`my-dithers-${session.user.id}`);
 
       return NextResponse.json({ dither });
     }
@@ -254,6 +262,10 @@ export async function POST(request: Request) {
         status: "ready",
       })
       .returning();
+
+    // Revalidate caches
+    revalidateTag("dithers");
+    revalidateTag(`my-dithers-${session.user.id}`);
 
     return NextResponse.json({ dither });
   } catch (error) {

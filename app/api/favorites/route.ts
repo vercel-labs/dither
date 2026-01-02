@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { favorites, dithers, users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
@@ -115,6 +116,9 @@ export async function POST(request: Request) {
         ditherId,
       })
       .returning();
+
+    // Revalidate caches
+    revalidateTag(`favorites-${session.user.id}`);
 
     return NextResponse.json({ favorite });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { dithers, VISIBILITY_OPTIONS, type Visibility } from "@/lib/db/schema";
 import { uploadImage } from "@/lib/storage";
@@ -85,6 +86,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
+    // Revalidate caches
+    revalidateTag("dithers");
+    revalidateTag(`my-dithers-${session.user.id}`);
+
     return NextResponse.json({ dither });
   } catch (error) {
     console.error("Error updating dither:", error);
@@ -157,6 +162,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
         { status: 404 },
       );
     }
+
+    // Revalidate caches
+    revalidateTag("dithers");
+    revalidateTag(`my-dithers-${session.user.id}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {
