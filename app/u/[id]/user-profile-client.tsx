@@ -2,7 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import { Header } from "@/components/header";
+import { useSetAtom } from "jotai";
+import { resetHeaderAtom } from "@/lib/atoms";
 
 interface DitherItem {
   id: string;
@@ -121,10 +122,17 @@ interface UserProfileClientProps {
 }
 
 export function UserProfileClient({ user, dithers }: UserProfileClientProps) {
-  return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
-      <Header />
+  // Reset header state on mount/unmount to ensure clean state
+  const resetHeader = useSetAtom(resetHeaderAtom);
+  useEffect(() => {
+    resetHeader();
+    return () => {
+      resetHeader();
+    };
+  }, [resetHeader]);
 
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa] text-black">
       <main className="flex-1 min-h-0 overflow-y-auto">
         {/* Profile header */}
         <section className="py-8 px-4 border-b border-black/10">

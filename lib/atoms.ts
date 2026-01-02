@@ -115,6 +115,55 @@ export const canSaveAtom = atom(
 );
 
 // =============================================================================
+// Header State Atoms (for page-specific header content)
+// =============================================================================
+
+export type Visibility = "public" | "private";
+
+export interface HeaderState {
+  title: string | null;
+  visibility: Visibility | null;
+  isOwner: boolean;
+  isUpdatingVisibility: boolean;
+  isDeleting: boolean;
+  isFavorited: boolean;
+  showFavorite: boolean;
+}
+
+const defaultHeaderState: HeaderState = {
+  title: null,
+  visibility: null,
+  isOwner: false,
+  isUpdatingVisibility: false,
+  isDeleting: false,
+  isFavorited: false,
+  showFavorite: false,
+};
+
+export const headerStateAtom = atom<HeaderState>(defaultHeaderState);
+
+// Callbacks for header actions (set by pages)
+export const headerCallbacksAtom = atom<{
+  onVisibilityChange: ((visibility: Visibility) => void) | null;
+  onDelete: (() => void) | null;
+  onFavoriteToggle: (() => void) | null;
+}>({
+  onVisibilityChange: null,
+  onDelete: null,
+  onFavoriteToggle: null,
+});
+
+// Reset header to default state (used when navigating away from pages with header content)
+export const resetHeaderAtom = atom(null, (get, set) => {
+  set(headerStateAtom, defaultHeaderState);
+  set(headerCallbacksAtom, {
+    onVisibilityChange: null,
+    onDelete: null,
+    onFavoriteToggle: null,
+  });
+});
+
+// =============================================================================
 // Actions (write-only atoms for complex operations)
 // =============================================================================
 

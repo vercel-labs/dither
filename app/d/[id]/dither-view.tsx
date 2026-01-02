@@ -9,10 +9,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { userAtom } from "@/lib/atoms";
-import { applyDither } from "@/lib/dither";
-import type { DitherOptions } from "@/lib/dither";
 import {
+  userAtom,
   originalImageAtom,
   originalDataUrlAtom,
   processedDataUrlAtom,
@@ -22,8 +20,13 @@ import {
   isSavingAtom,
   promptAtom,
   resetImageAtom,
+  headerStateAtom,
+  headerCallbacksAtom,
+  resetHeaderAtom,
+  type Visibility,
 } from "@/lib/atoms";
-import { Header } from "@/components/header";
+import { applyDither } from "@/lib/dither";
+import type { DitherOptions } from "@/lib/dither";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
 import {
@@ -41,7 +44,7 @@ import {
   type DownloadOptions,
 } from "@/components/download-dialog";
 import { getOriginalImageUrl } from "@/lib/url";
-import type { Visibility, DitherStatus } from "@/lib/db/schema";
+import type { DitherStatus } from "@/lib/db/schema";
 
 interface DitherViewProps {
   id: string;
@@ -138,6 +141,11 @@ export function DitherView({
   const user = useAtomValue(userAtom);
   const [isFavorited, setIsFavorited] = useState(false);
 
+  // Header state atoms
+  const setHeaderState = useSetAtom(headerStateAtom);
+  const setHeaderCallbacks = useSetAtom(headerCallbacksAtom);
+  const resetHeader = useSetAtom(resetHeaderAtom);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -158,6 +166,35 @@ export function DitherView({
     checkFavorite();
   }, [id, user]);
 
+  // Sync header state with atoms
+  useEffect(() => {
+    setHeaderState({
+      title,
+      visibility,
+      isOwner,
+      isUpdatingVisibility,
+      isDeleting,
+      isFavorited,
+      showFavorite: !!user,
+    });
+  }, [
+    title,
+    visibility,
+    isOwner,
+    isUpdatingVisibility,
+    isDeleting,
+    isFavorited,
+    user,
+    setHeaderState,
+  ]);
+
+  // Reset header on unmount
+  useEffect(() => {
+    return () => {
+      resetHeader();
+    };
+  }, [resetHeader]);
+
   const handleFavoriteToggle = useCallback(async () => {
     if (!user) return;
 
@@ -177,6 +214,49 @@ export function DitherView({
       console.error("Error toggling favorite:", error);
     }
   }, [id, user, isFavorited]);
+
+  const handleVisibilityChange = useCallback(
+    async (newVisibility: Visibility) => {
+      if (!isOwner || isUpdatingVisibility) return;
+
+      setIsUpdatingVisibility(true);
+      try {
+        const response = await fetch(`/api/dithers/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visibility: newVisibility }),
+        });
+
+        if (response.ok) {
+          setVisibility(newVisibility);
+        }
+      } catch (error) {
+        console.error("Error updating visibility:", error);
+      } finally {
+        setIsUpdatingVisibility(false);
+      }
+    },
+    [id, isOwner, isUpdatingVisibility],
+  );
+
+  const handleDeleteClick = useCallback(() => {
+    if (!isOwner || isDeleting) return;
+    setShowDeleteDialog(true);
+  }, [isOwner, isDeleting]);
+
+  // Sync header callbacks with atoms
+  useEffect(() => {
+    setHeaderCallbacks({
+      onVisibilityChange: handleVisibilityChange,
+      onDelete: handleDeleteClick,
+      onFavoriteToggle: handleFavoriteToggle,
+    });
+  }, [
+    handleVisibilityChange,
+    handleDeleteClick,
+    handleFavoriteToggle,
+    setHeaderCallbacks,
+  ]);
 
   useEffect(() => {
     if (status === "ready" || status === "failed") return;
@@ -579,35 +659,6 @@ export function DitherView({
     }
   }, [processedDataUrl, id, options, isOwner, isSaving, setIsSaving]);
 
-  const handleVisibilityChange = useCallback(
-    async (newVisibility: Visibility) => {
-      if (!isOwner || isUpdatingVisibility) return;
-
-      setIsUpdatingVisibility(true);
-      try {
-        const response = await fetch(`/api/dithers/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visibility: newVisibility }),
-        });
-
-        if (response.ok) {
-          setVisibility(newVisibility);
-        }
-      } catch (error) {
-        console.error("Error updating visibility:", error);
-      } finally {
-        setIsUpdatingVisibility(false);
-      }
-    },
-    [id, isOwner, isUpdatingVisibility],
-  );
-
-  const handleDeleteClick = useCallback(() => {
-    if (!isOwner || isDeleting) return;
-    setShowDeleteDialog(true);
-  }, [isOwner, isDeleting]);
-
   const handleDeleteConfirm = useCallback(async () => {
     if (!isOwner || isDeleting) return;
 
@@ -642,17 +693,7 @@ export function DitherView({
 
   if (status === "pending" || status === "generating") {
     return (
-      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
-        <Header
-          title={title}
-          visibility={visibility}
-          isOwner={isOwner}
-          isUpdatingVisibility={false}
-          onVisibilityChange={() => {}}
-          onDelete={handleDeleteClick}
-          isDeleting={isDeleting}
-        />
-
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
           <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="text-center">
@@ -677,17 +718,7 @@ export function DitherView({
 
   if (status === "failed") {
     return (
-      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
-        <Header
-          title={title}
-          visibility={visibility}
-          isOwner={isOwner}
-          isUpdatingVisibility={false}
-          onVisibilityChange={() => {}}
-          onDelete={handleDeleteClick}
-          isDeleting={isDeleting}
-        />
-
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent className="bg-[#fafafa] border border-black">
             <AlertDialogHeader>
@@ -741,21 +772,8 @@ export function DitherView({
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
+    <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa] text-black">
       <canvas ref={canvasRef} className="hidden" />
-
-      <Header
-        title={title}
-        visibility={visibility}
-        isOwner={isOwner}
-        isUpdatingVisibility={isUpdatingVisibility}
-        onVisibilityChange={handleVisibilityChange}
-        onDelete={handleDeleteClick}
-        isDeleting={isDeleting}
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
-        showFavorite={!!user}
-      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="bg-[#fafafa] border border-black">

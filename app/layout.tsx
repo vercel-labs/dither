@@ -4,6 +4,7 @@ import { headers, cookies } from "next/headers";
 import "./globals.css";
 import { auth, configuredProviders } from "@/lib/auth";
 import { AppProvider } from "@/components/app-provider";
+import { Header } from "@/components/header";
 import type { AiModelId } from "@/lib/atoms";
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -58,7 +59,10 @@ export default async function RootLayout({
           initialPrompt={initialPrompt}
           initialSelectedModel={initialSelectedModel}
         >
-          {children}
+          <div className="min-h-dvh flex flex-col">
+            <Header />
+            {children}
+          </div>
         </AppProvider>
       </body>
     </html>

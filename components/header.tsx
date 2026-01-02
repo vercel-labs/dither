@@ -8,9 +8,11 @@ import {
   providersAtom,
   currentUserIdAtom,
   currentUserCustomAvatarAtom,
+  headerStateAtom,
+  headerCallbacksAtom,
 } from "@/lib/atoms";
 import { AvatarEditor } from "./avatar-editor";
-import type { Visibility } from "@/lib/db/schema";
+import type { Visibility } from "@/lib/atoms";
 
 // 8x7 pixel heart pattern
 const HEART_PATTERN = [
@@ -281,31 +283,22 @@ const PROVIDER_NAMES: Record<string, string> = {
   vercel: "VERCEL",
 };
 
-interface HeaderProps {
-  title?: string | null;
-  visibility?: Visibility;
-  isOwner?: boolean;
-  isUpdatingVisibility?: boolean;
-  onVisibilityChange?: (visibility: Visibility) => void;
-  onDelete?: () => void;
-  isDeleting?: boolean;
-  isFavorited?: boolean;
-  onFavoriteToggle?: () => void;
-  showFavorite?: boolean;
-}
+export function Header() {
+  // Get header state from atoms (set by pages)
+  const headerState = useAtomValue(headerStateAtom);
+  const headerCallbacks = useAtomValue(headerCallbacksAtom);
 
-export function Header({
-  title,
-  visibility,
-  isOwner,
-  isUpdatingVisibility,
-  onVisibilityChange,
-  onDelete,
-  isDeleting,
-  isFavorited,
-  onFavoriteToggle,
-  showFavorite,
-}: HeaderProps = {}) {
+  const {
+    title,
+    visibility,
+    isOwner,
+    isUpdatingVisibility,
+    isDeleting,
+    isFavorited,
+    showFavorite,
+  } = headerState;
+
+  const { onVisibilityChange, onDelete, onFavoriteToggle } = headerCallbacks;
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
   const setCurrentUserId = useSetAtom(currentUserIdAtom);

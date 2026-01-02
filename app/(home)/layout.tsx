@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useState, useEffect, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
 import Link from "next/link";
 import { generateId } from "@/lib/id";
-import { userAtom, generateErrorAtom } from "@/lib/atoms";
-import { Header } from "@/components/header";
+import { userAtom, generateErrorAtom, resetHeaderAtom } from "@/lib/atoms";
 import { GenerateArea } from "@/components/generate-area";
 
 const tabs = [
@@ -21,6 +20,15 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const user = useAtomValue(userAtom);
   const setError = useSetAtom(generateErrorAtom);
   const [isCreating, setIsCreating] = useState(false);
+  const resetHeader = useSetAtom(resetHeaderAtom);
+
+  // Reset header state on mount/unmount to ensure clean state
+  useEffect(() => {
+    resetHeader();
+    return () => {
+      resetHeader();
+    };
+  }, [resetHeader]);
 
   const handleGenerate = useCallback(
     async (
@@ -66,9 +74,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const isSignedIn = !!user;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-[#fafafa] text-black">
-      <Header />
-
+    <div className="flex-1 flex flex-col bg-[#fafafa] text-black">
       <main className="flex-1">
         {/* Hero */}
         <section className="py-16 px-4">
