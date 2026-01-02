@@ -173,6 +173,9 @@ interface HeaderProps {
   onVisibilityChange?: (visibility: Visibility) => void;
   onDelete?: () => void;
   isDeleting?: boolean;
+  isFavorited?: boolean;
+  onFavoriteToggle?: () => void;
+  showFavorite?: boolean;
 }
 
 export function Header({
@@ -183,6 +186,9 @@ export function Header({
   onVisibilityChange,
   onDelete,
   isDeleting,
+  isFavorited,
+  onFavoriteToggle,
+  showFavorite,
 }: HeaderProps = {}) {
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
@@ -247,6 +253,16 @@ export function Header({
 
         {/* Right Side */}
         <div className="flex items-center gap-4">
+          {showFavorite && onFavoriteToggle && (
+            <button
+              onClick={onFavoriteToggle}
+              className="text-xs uppercase tracking-wider"
+              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              {isFavorited ? "♥" : "♡"}
+            </button>
+          )}
+
           {visibility && (
             <div className="flex items-center gap-3">
               {isOwner && onVisibilityChange ? (

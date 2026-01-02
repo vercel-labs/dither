@@ -2,7 +2,8 @@
 
 import { useRef, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useSetAtom, useAtomValue } from "jotai";
+import { userAtom } from "@/lib/atoms";
 import { applyDither } from "@/lib/dither";
 import type { DitherOptions } from "@/lib/dither";
 import {
@@ -90,7 +91,50 @@ export function DitherView({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  // Favorite state
+  const user = useAtomValue(userAtom);
+  const [isFavorited, setIsFavorited] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check favorite status
+  useEffect(() => {
+    if (!user) return;
+
+    const checkFavorite = async () => {
+      try {
+        const response = await fetch(`/api/favorites/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setIsFavorited(data.isFavorited);
+        }
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    };
+
+    checkFavorite();
+  }, [id, user]);
+
+  const handleFavoriteToggle = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      if (isFavorited) {
+        await fetch(`/api/favorites/${id}`, { method: "DELETE" });
+        setIsFavorited(false);
+      } else {
+        await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ditherId: id }),
+        });
+        setIsFavorited(true);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  }, [id, user, isFavorited]);
 
   // Poll for status when pending or generating
   useEffect(() => {
@@ -491,6 +535,9 @@ export function DitherView({
         onVisibilityChange={handleVisibilityChange}
         onDelete={handleDeleteClick}
         isDeleting={isDeleting}
+        isFavorited={isFavorited}
+        onFavoriteToggle={handleFavoriteToggle}
+        showFavorite={!!user && !isOwner}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

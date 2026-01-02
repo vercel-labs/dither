@@ -89,7 +89,22 @@ export const dithers = pgTable("dithers", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Favorites table
+export const favorites = pgTable("favorites", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  ditherId: text("dither_id")
+    .notNull()
+    .references(() => dithers.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Dither = typeof dithers.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;

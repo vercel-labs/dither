@@ -26,7 +26,7 @@ function DitherCard({ dither, isOwn }: { dither: DitherItem; isOwn: boolean }) {
   return (
     <Link
       href={`/d/${dither.id}`}
-      className="group block aspect-square relative border-2 border-black bg-white overflow-hidden hover:translate-x-1 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_#000]"
+      className="group block aspect-square relative border-2 border-black bg-white overflow-hidden hover:opacity-100 hover:translate-x-1 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_#000]"
     >
       {dither.imageUrl && (
         <img
@@ -56,18 +56,23 @@ function GallerySection({
   dithers,
   isOwn,
   emptyMessage,
+  icon,
 }: {
   title: string;
   dithers: DitherItem[];
   isOwn: boolean;
   emptyMessage?: string;
+  icon?: string;
 }) {
   if (dithers.length === 0 && !emptyMessage) return null;
 
   return (
     <section>
       <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-black">
-        <h2 className="text-xs uppercase tracking-wider font-bold">{title}</h2>
+        <h2 className="text-xs uppercase tracking-wider font-bold">
+          {icon && <span className="mr-1">{icon}</span>}
+          {title}
+        </h2>
         <span className="text-xs uppercase tracking-wider">
           {dithers.length}
         </span>
@@ -75,7 +80,7 @@ function GallerySection({
       {dithers.length === 0 ? (
         <p className="text-xs text-black/50">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {dithers.map((dither) => (
             <DitherCard key={dither.id} dither={dither} isOwn={isOwn} />
           ))}
@@ -88,25 +93,36 @@ function GallerySection({
 export function DitherGallery() {
   const user = useAtomValue(userAtom);
   const [data, setData] = useState<GalleryData | null>(null);
+  const [favorites, setFavorites] = useState<DitherItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDithers = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/dithers");
-        if (response.ok) {
-          const result = await response.json();
+        // Fetch dithers and favorites in parallel
+        const [dithersResponse, favoritesResponse] = await Promise.all([
+          fetch("/api/dithers"),
+          user ? fetch("/api/favorites") : Promise.resolve(null),
+        ]);
+
+        if (dithersResponse.ok) {
+          const result = await dithersResponse.json();
           setData(result);
         }
+
+        if (favoritesResponse?.ok) {
+          const result = await favoritesResponse.json();
+          setFavorites(result.favorites || []);
+        }
       } catch (error) {
-        console.error("Error fetching dithers:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDithers();
-  }, []);
+    fetchData();
+  }, [user]);
 
   if (loading) {
     return (
@@ -119,7 +135,9 @@ export function DitherGallery() {
   if (!data) return null;
 
   const hasAnyDithers =
-    data.myDithers.length > 0 || data.publicDithers.length > 0;
+    data.myDithers.length > 0 ||
+    data.publicDithers.length > 0 ||
+    favorites.length > 0;
 
   if (!hasAnyDithers) return null;
 
@@ -130,6 +148,14 @@ export function DitherGallery() {
           title="Your Dithers"
           dithers={data.myDithers}
           isOwn={true}
+        />
+      )}
+      {user && favorites.length > 0 && (
+        <GallerySection
+          title="Favorites"
+          dithers={favorites}
+          isOwn={false}
+          icon="♥"
         />
       )}
       {data.publicDithers.length > 0 && (
