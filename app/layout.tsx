@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import { headers, cookies } from "next/headers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { auth, configuredProviders } from "@/lib/auth";
 import { AppProvider } from "@/components/app-provider";
@@ -64,6 +65,7 @@ export default async function RootLayout({
             {children}
           </div>
         </AppProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
