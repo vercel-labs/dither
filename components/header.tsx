@@ -383,7 +383,7 @@ export function Header() {
           </div>
 
           {/* Right */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {showFavorite && onFavoriteToggle && (
               <button
                 onClick={onFavoriteToggle}
@@ -401,7 +401,7 @@ export function Header() {
             )}
 
             {visibility && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {isOwner && onVisibilityChange ? (
                   <button
                     onClick={() =>

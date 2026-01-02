@@ -573,7 +573,7 @@ export function DitherView({
         <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
           <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="text-center">
-              <p className="font-mono text-xs mb-2">
+              <p className="font-mono text-xs mb-2 animate-blink">
                 {status === "pending" ? "STARTING..." : "GENERATING..."}
               </p>
               {initialPrompt && (
