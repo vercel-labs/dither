@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { GalleryLayout } from "@/components/gallery-layout";
+import { DitherGallery } from "@/components/dither-gallery";
 import type { DitherItem } from "@/lib/types";
 
 async function getFavorites(
@@ -50,10 +50,9 @@ export default async function FavoritesPage() {
   );
 
   return (
-    <GalleryLayout
+    <DitherGallery
       dithers={favoriteDithers}
       favoritedIds={favoritedIds}
-      isSignedIn={true}
       showUser={true}
     />
   );

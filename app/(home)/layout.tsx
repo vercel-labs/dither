@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
 import Link from "next/link";
@@ -8,16 +8,6 @@ import { generateId } from "@/lib/id";
 import { userAtom, generateErrorAtom } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { GenerateArea } from "@/components/generate-area";
-import { DitherGallery } from "@/components/dither-gallery";
-import type { DitherItem } from "@/lib/types";
-
-interface GalleryLayoutProps {
-  dithers: DitherItem[];
-  favoritedIds: string[];
-  isSignedIn: boolean;
-  showUser: boolean;
-  isOwnDithers?: boolean;
-}
 
 const tabs = [
   { path: "/", label: "Popular", requiresAuth: false },
@@ -25,13 +15,7 @@ const tabs = [
   { path: "/my", label: "My Dithers", requiresAuth: true },
 ];
 
-export function GalleryLayout({
-  dithers,
-  favoritedIds,
-  isSignedIn,
-  showUser,
-  isOwnDithers = false,
-}: GalleryLayoutProps) {
+export default function HomeLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const user = useAtomValue(userAtom);
@@ -73,6 +57,8 @@ export function GalleryLayout({
     },
     [user, router, setError],
   );
+
+  const isSignedIn = !!user;
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
@@ -131,13 +117,8 @@ export function GalleryLayout({
               })}
             </div>
 
-            {/* Gallery content */}
-            <DitherGallery
-              dithers={dithers}
-              showUser={showUser}
-              favoritedIds={favoritedIds}
-              isOwnDithers={isOwnDithers}
-            />
+            {/* Gallery content from page */}
+            {children}
           </div>
         </section>
       </main>
