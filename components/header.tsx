@@ -6,7 +6,7 @@ import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
 import type { Visibility } from "@/lib/db/schema";
 
-function DitherLoader({ size = 32 }: { size?: number }) {
+function DitherLoader({ size = 24 }: { size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const internalSize = size * 4;
 
@@ -17,40 +17,22 @@ function DitherLoader({ size = 32 }: { size?: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const patterns: boolean[][] = [];
-    for (let p = 0; p < 8; p++) {
-      const pattern: boolean[] = [];
-      const density = 0.3 + Math.random() * 0.4;
-      for (let i = 0; i < internalSize * internalSize; i++) {
-        pattern.push(Math.random() < density);
-      }
-      patterns.push(pattern);
-    }
-
     let animationId: number;
-    let lastUpdate = 0;
-    const frameInterval = 100;
+    let frame = 0;
 
-    const animate = (timestamp: number) => {
-      if (timestamp - lastUpdate >= frameInterval) {
-        lastUpdate = timestamp;
-
+    const animate = () => {
+      frame++;
+      if (frame % 6 === 0) {
         const imageData = ctx.createImageData(internalSize, internalSize);
         const data = imageData.data;
 
-        const basePattern =
-          patterns[Math.floor(Math.random() * patterns.length)];
-
         for (let i = 0; i < internalSize * internalSize; i++) {
-          const idx = i * 4;
-          const sparkle = Math.random() < 0.15;
-          const isWhite = sparkle ? !basePattern[i] : basePattern[i];
-          const value = isWhite ? 255 : 0;
-
-          data[idx] = value;
-          data[idx + 1] = value;
-          data[idx + 2] = value;
-          data[idx + 3] = 255;
+          const isOn = Math.random() < 0.5;
+          const value = isOn ? 0 : 250;
+          data[i * 4] = value;
+          data[i * 4 + 1] = value;
+          data[i * 4 + 2] = value;
+          data[i * 4 + 3] = 255;
         }
 
         ctx.putImageData(imageData, 0, 0);
@@ -67,13 +49,13 @@ function DitherLoader({ size = 32 }: { size?: number }) {
       ref={canvasRef}
       width={internalSize}
       height={internalSize}
-      className="border-2 border-black"
-      style={{ width: size, height: size }}
+      className="border border-black"
+      style={{ width: size, height: size, imageRendering: "pixelated" }}
     />
   );
 }
 
-function DitheredAvatar({ src, size = 32 }: { src: string; size?: number }) {
+function DitheredAvatar({ src, size = 24 }: { src: string; size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -95,27 +77,22 @@ function DitheredAvatar({ src, size = 32 }: { src: string; size?: number }) {
       const data = imageData.data;
 
       const grayscale = new Float32Array(internalSize * internalSize);
-      const contrast = 1.3;
-      const brightness = 5;
 
       for (let i = 0; i < internalSize * internalSize; i++) {
         const idx = i * 4;
-        let gray =
+        const gray =
           0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-        gray = gray + brightness;
-        gray = (gray - 128) * contrast + 128;
-        grayscale[i] = Math.max(0, Math.min(255, gray));
+        grayscale[i] = Math.max(0, Math.min(255, (gray - 128) * 1.3 + 128));
       }
 
       const errors = new Float32Array(grayscale);
       const output = new Uint8ClampedArray(internalSize * internalSize);
-      const threshold = 128;
 
       for (let y = 0; y < internalSize; y++) {
         for (let x = 0; x < internalSize; x++) {
           const idx = y * internalSize + x;
           const oldPixel = errors[idx];
-          const newPixel = oldPixel < threshold ? 0 : 255;
+          const newPixel = oldPixel < 128 ? 0 : 255;
           output[idx] = newPixel;
           const error = oldPixel - newPixel;
 
@@ -130,10 +107,9 @@ function DitheredAvatar({ src, size = 32 }: { src: string; size?: number }) {
       }
 
       for (let i = 0; i < internalSize * internalSize; i++) {
-        const value = output[i];
-        data[i * 4] = value;
-        data[i * 4 + 1] = value;
-        data[i * 4 + 2] = value;
+        data[i * 4] = output[i];
+        data[i * 4 + 1] = output[i];
+        data[i * 4 + 2] = output[i];
       }
 
       ctx.putImageData(imageData, 0, 0);
@@ -152,17 +128,17 @@ function DitheredAvatar({ src, size = 32 }: { src: string; size?: number }) {
   return (
     <canvas
       ref={canvasRef}
-      className={`border-2 border-black ${loaded ? "opacity-100" : "opacity-0"}`}
+      className={`border border-black ${loaded ? "opacity-100" : "opacity-0"}`}
       style={{ width: size, height: size, imageRendering: "pixelated" }}
     />
   );
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
-  github: "GitHub",
-  google: "Google",
-  discord: "Discord",
-  vercel: "Vercel",
+  github: "GITHUB",
+  google: "GOOGLE",
+  discord: "DISCORD",
+  vercel: "VERCEL",
 };
 
 interface HeaderProps {
@@ -234,32 +210,28 @@ export function Header({
   }, [menuOpen, providerMenuOpen]);
 
   return (
-    <header className="border-b-2 border-black">
-      <div className="px-4 h-14 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-sm font-bold uppercase tracking-wider">
-            Dither
+    <header className="border-b border-black bg-[#fafafa]">
+      <div className="px-4 h-10 flex items-center justify-between">
+        {/* Left */}
+        <div className="flex items-center gap-4">
+          <a href="/" className="font-mono text-xs tracking-wider">
+            DITHER
           </a>
           {title !== undefined && (
             <>
-              <span className="text-black/30">/</span>
-              <span className="text-sm truncate max-w-[180px]">
-                {title || "Untitled"}
+              <span className="text-black/20">/</span>
+              <span className="font-mono text-xs text-black/60 truncate max-w-[200px]">
+                {title?.toUpperCase() || "UNTITLED"}
               </span>
             </>
           )}
         </div>
 
-        {/* Right Side */}
+        {/* Right */}
         <div className="flex items-center gap-4">
           {showFavorite && onFavoriteToggle && (
-            <button
-              onClick={onFavoriteToggle}
-              className="text-xs uppercase tracking-wider"
-              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
-            >
-              {isFavorited ? "♥" : "♡"}
+            <button onClick={onFavoriteToggle} className="font-mono text-xs">
+              {isFavorited ? "★" : "☆"}
             </button>
           )}
 
@@ -273,22 +245,22 @@ export function Header({
                     )
                   }
                   disabled={isUpdatingVisibility}
-                  className="text-xs uppercase tracking-wider disabled:opacity-50"
+                  className="font-mono text-xs text-black/60 disabled:opacity-50"
                 >
-                  [{visibility}]
+                  {visibility.toUpperCase()}
                 </button>
               ) : (
-                <span className="text-xs uppercase tracking-wider">
-                  [{visibility}]
+                <span className="font-mono text-xs text-black/40">
+                  {visibility.toUpperCase()}
                 </span>
               )}
               {isOwner && onDelete && (
                 <button
                   onClick={onDelete}
                   disabled={isDeleting}
-                  className="text-xs uppercase tracking-wider text-red-600 disabled:opacity-50"
+                  className="font-mono text-xs text-black/40 disabled:opacity-50"
                 >
-                  [Delete]
+                  DELETE
                 </button>
               )}
             </div>
@@ -298,13 +270,13 @@ export function Header({
             href="https://github.com/vercel-labs/dither"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs uppercase tracking-wider hidden sm:block"
+            className="font-mono text-xs text-black/40 hidden sm:block"
           >
-            GitHub
+            GITHUB
           </a>
 
           {isLoading ? (
-            <DitherLoader size={32} />
+            <DitherLoader size={24} />
           ) : isSignedIn ? (
             <div className="relative">
               <button
@@ -314,26 +286,26 @@ export function Header({
                 }}
               >
                 {user?.image ? (
-                  <DitheredAvatar src={user.image} size={32} />
+                  <DitheredAvatar src={user.image} size={24} />
                 ) : (
-                  <div className="w-8 h-8 bg-black text-white text-xs font-bold flex items-center justify-center border-2 border-black">
+                  <div className="w-6 h-6 bg-black text-white text-[10px] flex items-center justify-center font-mono">
                     {user?.name?.charAt(0).toUpperCase() || "?"}
                   </div>
                 )}
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border-2 border-black z-50">
-                  <div className="px-3 py-2 border-b-2 border-black">
-                    <p className="text-xs font-bold truncate">
-                      {user?.name || "User"}
+                <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
+                  <div className="px-3 py-2 border-b border-black/20">
+                    <p className="font-mono text-[10px] text-black/60 truncate">
+                      {user?.name?.toUpperCase()}
                     </p>
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="w-full px-3 py-2 text-left text-xs uppercase tracking-wider hover:bg-black hover:text-white"
+                    className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
                   >
-                    Sign Out
+                    SIGN OUT
                   </button>
                 </div>
               )}
@@ -342,9 +314,9 @@ export function Header({
             providers.length === 1 ? (
               <button
                 onClick={() => handleSignIn(providers[0])}
-                className="text-xs uppercase tracking-wider font-bold"
+                className="font-mono text-xs"
               >
-                Sign In
+                SIGN IN
               </button>
             ) : (
               <div className="relative">
@@ -353,20 +325,20 @@ export function Header({
                     e.stopPropagation();
                     setProviderMenuOpen(!providerMenuOpen);
                   }}
-                  className="text-xs uppercase tracking-wider font-bold"
+                  className="font-mono text-xs"
                 >
-                  Sign In ↓
+                  SIGN IN
                 </button>
 
                 {providerMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border-2 border-black z-50">
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
                     {providers.map((provider) => (
                       <button
                         key={provider}
                         onClick={() => handleSignIn(provider)}
-                        className="w-full px-3 py-2 text-left text-xs uppercase tracking-wider hover:bg-black hover:text-white"
+                        className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
                       >
-                        {PROVIDER_NAMES[provider] || provider}
+                        {PROVIDER_NAMES[provider] || provider.toUpperCase()}
                       </button>
                     ))}
                   </div>

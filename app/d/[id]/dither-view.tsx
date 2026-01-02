@@ -43,9 +43,7 @@ interface DitherViewProps {
   savedSettings: DitherOptions;
 }
 
-// Construct the original image URL from the dither ID
 function getOriginalUrlFromId(id: string): string {
-  // This assumes the storage URL pattern - adjust based on your storage setup
   return `/api/dithers/${id}/original`;
 }
 
@@ -62,7 +60,6 @@ export function DitherView({
 }: DitherViewProps) {
   const router = useRouter();
 
-  // Local state for polling
   const [status, setStatus] = useState<DitherStatus>(initialStatus);
   const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl);
   const [title, setTitle] = useState<string | null>(initialTitle);
@@ -70,13 +67,11 @@ export function DitherView({
     initialErrorMessage,
   );
 
-  // Track if we need to auto-save (first time processing)
   const needsAutoSaveRef = useRef(
     !initialImageUrl && initialStatus === "ready",
   );
   const hasAutoSavedRef = useRef(false);
 
-  // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
   const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
   const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
@@ -85,19 +80,16 @@ export function DitherView({
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const setPrompt = useSetAtom(promptAtom);
 
-  // Visibility state
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Favorite state
   const user = useAtomValue(userAtom);
   const [isFavorited, setIsFavorited] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Check favorite status
   useEffect(() => {
     if (!user) return;
 
@@ -136,7 +128,6 @@ export function DitherView({
     }
   }, [id, user, isFavorited]);
 
-  // Poll for status when pending or generating
   useEffect(() => {
     if (status === "ready" || status === "failed") return;
 
@@ -153,11 +144,9 @@ export function DitherView({
         setErrorMessage(dither.errorMessage);
 
         if (dither.status === "ready") {
-          // Generation is complete - we can now load the original and process it
           if (dither.imageUrl) {
             setImageUrl(dither.imageUrl);
           } else {
-            // No imageUrl yet - we need to process on first view
             needsAutoSaveRef.current = true;
           }
           clearInterval(pollInterval);
@@ -172,16 +161,12 @@ export function DitherView({
     return () => clearInterval(pollInterval);
   }, [id, status]);
 
-  // Load the image when ready
   useEffect(() => {
     if (status !== "ready") return;
 
     if (initialPrompt) setPrompt(initialPrompt);
-
-    // Initialize with saved settings
     setOptions(savedSettings);
 
-    // If we have an imageUrl, display it and load original for re-processing
     if (imageUrl) {
       setProcessedDataUrl(imageUrl);
       const originalUrl = getOriginalImageUrl(imageUrl);
@@ -192,9 +177,6 @@ export function DitherView({
       img.onload = () => setOriginalImage(img);
       img.src = originalUrl;
     } else {
-      // No imageUrl yet - load original directly and process it
-      // The original is stored at {id}-original.png
-      // We need to construct the URL based on your storage pattern
       const originalUrl = getOriginalUrlFromId(id);
       setOriginalDataUrl(originalUrl);
 
@@ -246,7 +228,6 @@ export function DitherView({
     [setIsProcessing, setProcessedDataUrl],
   );
 
-  // Auto-save after first processing when needed
   const autoSave = useCallback(
     async (dataUrl: string) => {
       if (!isOwner || hasAutoSavedRef.current) return;
@@ -277,20 +258,16 @@ export function DitherView({
     [id, options, isOwner],
   );
 
-  // Process image when original loads
   useEffect(() => {
     if (!originalImage || status !== "ready") return;
 
-    // Process the image
     const dataUrl = processImage(originalImage, options);
 
-    // Auto-save if this is the first time (no imageUrl yet)
     if (dataUrl && needsAutoSaveRef.current && !hasAutoSavedRef.current) {
       autoSave(dataUrl);
     }
   }, [originalImage, status, options, processImage, autoSave]);
 
-  // Re-process when options change (but not on initial load)
   const isInitialMount = useRef(true);
   useEffect(() => {
     if (isInitialMount.current) {
@@ -356,8 +333,6 @@ export function DitherView({
 
         if (response.ok) {
           setVisibility(newVisibility);
-        } else {
-          console.error("Failed to update visibility");
         }
       } catch (error) {
         console.error("Error updating visibility:", error);
@@ -379,9 +354,7 @@ export function DitherView({
     setIsDeleting(true);
     setShowDeleteDialog(false);
     try {
-      const response = await fetch(`/api/dithers/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(`/api/dithers/${id}`, { method: "DELETE" });
 
       if (response.ok) {
         router.push("/");
@@ -395,7 +368,6 @@ export function DitherView({
     }
   }, [id, isOwner, isDeleting, router]);
 
-  // Keyboard shortcut: Cmd+S / Ctrl+S to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -408,10 +380,9 @@ export function DitherView({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
 
-  // Show loading state while generating (with sidebar)
   if (status === "pending" || status === "generating") {
     return (
-      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <Header
           title={null}
           visibility={visibility}
@@ -423,40 +394,28 @@ export function DitherView({
         />
 
         <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-          {/* Main Panel - Loading State */}
-          <div className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-8 overflow-hidden">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="mb-6">
-                {/* Animated loading indicator */}
-                <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto" />
-              </div>
-              <h2 className="text-xl font-bold uppercase tracking-wider mb-2">
-                {status === "pending" ? "Starting..." : "Generating..."}
-              </h2>
+              <p className="font-mono text-xs mb-2">
+                {status === "pending" ? "STARTING..." : "GENERATING..."}
+              </p>
               {initialPrompt && (
-                <p className="text-sm text-black/60 max-w-md px-4">
-                  &ldquo;{initialPrompt}&rdquo;
+                <p className="font-mono text-[10px] text-black/40 max-w-xs">
+                  {initialPrompt}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Controls Panel - Disabled while generating */}
-          <ControlsPanel
-            onSave={() => {}}
-            onDownload={() => {}}
-            saveLabel="Save"
-            alwaysEnableSave={false}
-          />
+          <ControlsPanel onSave={() => {}} onDownload={() => {}} />
         </main>
       </div>
     );
   }
 
-  // Show error state if generation failed
   if (status === "failed") {
     return (
-      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
         <Header
           title={null}
           visibility={visibility}
@@ -468,52 +427,48 @@ export function DitherView({
         />
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <AlertDialogContent className="font-serif">
+          <AlertDialogContent className="bg-[#fafafa] border border-black">
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this dither?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete your
-                dither.
+              <AlertDialogTitle className="font-mono text-xs">
+                DELETE?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="font-mono text-[10px] text-black/60">
+                This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="font-mono text-[10px] border border-black/20">
+                CANCEL
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteConfirm}
-                className="bg-red-600 hover:bg-red-700 text-xs"
+                className="font-mono text-[10px] bg-black text-white"
               >
-                Delete
+                DELETE
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
         <main className="flex-1 min-h-0 flex items-center justify-center">
-          <div className="text-center max-w-md px-4">
-            <div className="mb-6">
-              <div className="w-16 h-16 border-4 border-red-600 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-2xl">✕</span>
-              </div>
-            </div>
-            <h2 className="text-xl font-bold uppercase tracking-wider mb-2 text-red-600">
-              Generation Failed
-            </h2>
-            <p className="text-sm text-black/60 mb-6">
-              {errorMessage || "An unknown error occurred"}
+          <div className="text-center">
+            <p className="font-mono text-xs mb-2">ERROR</p>
+            <p className="font-mono text-[10px] text-black/40 mb-4">
+              {errorMessage || "Unknown error"}
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() => router.push("/")}
-                className="px-4 py-2 text-xs uppercase tracking-wider font-bold bg-black text-white hover:bg-black/80"
+                className="font-mono text-[10px] px-4 py-2 bg-black text-white"
               >
-                Try Again
+                RETRY
               </button>
               {isOwner && (
                 <button
                   onClick={handleDeleteClick}
-                  className="px-4 py-2 text-xs uppercase tracking-wider font-bold border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                  className="font-mono text-[10px] px-4 py-2 border border-black"
                 >
-                  Delete
+                  DELETE
                 </button>
               )}
             </div>
@@ -524,7 +479,7 @@ export function DitherView({
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
       <canvas ref={canvasRef} className="hidden" />
 
       <Header
@@ -541,33 +496,34 @@ export function DitherView({
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="font-serif">
+        <AlertDialogContent className="bg-[#fafafa] border border-black">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this dither?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              dither.
+            <AlertDialogTitle className="font-mono text-xs">
+              DELETE?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-mono text-[10px] text-black/60">
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="font-mono text-[10px] border border-black/20">
+              CANCEL
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700 text-xs"
+              className="font-mono text-[10px] bg-black text-white"
             >
-              Delete
+              DELETE
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-        {/* Main Panel */}
-        <div className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-8 overflow-hidden">
+        <div className="flex-1 min-h-0 flex items-center justify-center p-4">
           <ImagePreview />
         </div>
 
-        {/* Controls Panel */}
         <ControlsPanel
           onSave={handleSave}
           onDownload={handleDownload}

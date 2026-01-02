@@ -26,13 +26,11 @@ export function ImagePreview() {
   const lastTouchDistance = useRef<number | null>(null);
   const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
 
-  // Reset zoom/pan when image changes
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   }, [src]);
 
-  // Get distance between two touch points
   const getTouchDistance = (touches: TouchList) => {
     if (touches.length < 2) return 0;
     const dx = touches[0].clientX - touches[1].clientX;
@@ -40,7 +38,6 @@ export function ImagePreview() {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // Get center point between two touches
   const getTouchCenter = (touches: TouchList) => {
     if (touches.length < 2)
       return { x: touches[0].clientX, y: touches[0].clientY };
@@ -50,7 +47,6 @@ export function ImagePreview() {
     };
   };
 
-  // Handle wheel event (trackpad pinch + mouse wheel zoom)
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
 
@@ -61,17 +57,13 @@ export function ImagePreview() {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    // Point relative to center
     const pointX = e.clientX - centerX;
     const pointY = e.clientY - centerY;
 
-    // Determine zoom delta
     let delta: number;
     if (e.ctrlKey) {
-      // Trackpad pinch gesture
       delta = -e.deltaY * 0.01;
     } else {
-      // Mouse wheel
       delta = -e.deltaY * 0.002;
     }
 
@@ -81,12 +73,10 @@ export function ImagePreview() {
         Math.max(MIN_ZOOM, prevZoom + delta * prevZoom),
       );
 
-      // Reset pan to center when at 100%
       if (newZoom === 1) {
         setPan({ x: 0, y: 0 });
       } else {
         const zoomRatio = newZoom / prevZoom;
-        // Adjust pan to zoom toward cursor position
         setPan((prevPan) => ({
           x: pointX - (pointX - prevPan.x) * zoomRatio,
           y: pointY - (pointY - prevPan.y) * zoomRatio,
@@ -97,7 +87,6 @@ export function ImagePreview() {
     });
   }, []);
 
-  // Handle touch start
   const handleTouchStart = useCallback(
     (e: TouchEvent) => {
       if (e.touches.length === 2) {
@@ -115,7 +104,6 @@ export function ImagePreview() {
     [zoom],
   );
 
-  // Handle touch move
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
       if (e.touches.length === 2 && lastTouchDistance.current !== null) {
@@ -130,7 +118,6 @@ export function ImagePreview() {
         const containerCenterX = rect.left + rect.width / 2;
         const containerCenterY = rect.top + rect.height / 2;
 
-        // Point relative to center
         const pointX = currentCenter.x - containerCenterX;
         const pointY = currentCenter.y - containerCenterY;
 
@@ -142,14 +129,11 @@ export function ImagePreview() {
             Math.max(MIN_ZOOM, prevZoom * scale),
           );
 
-          // Reset pan to center when at 100%
           if (newZoom === 1) {
             setPan({ x: 0, y: 0 });
           } else {
             const zoomRatio = newZoom / prevZoom;
-            // Adjust pan to zoom toward pinch center
             setPan((prevPan) => {
-              // Also account for pinch center movement
               const dx = lastTouchCenter.current
                 ? currentCenter.x - lastTouchCenter.current.x
                 : 0;
@@ -184,14 +168,12 @@ export function ImagePreview() {
     [isPanning],
   );
 
-  // Handle touch end
   const handleTouchEnd = useCallback(() => {
     lastTouchDistance.current = null;
     lastTouchCenter.current = null;
     setIsPanning(false);
   }, []);
 
-  // Double tap to reset
   const lastTapTime = useRef(0);
   const handleDoubleTap = useCallback((e: TouchEvent) => {
     const now = Date.now();
@@ -203,7 +185,6 @@ export function ImagePreview() {
     lastTapTime.current = now;
   }, []);
 
-  // Attach event listeners
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -237,7 +218,6 @@ export function ImagePreview() {
     handleDoubleTap,
   ]);
 
-  // Mouse drag for panning when zoomed
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (zoom > 1) {
@@ -278,25 +258,25 @@ export function ImagePreview() {
     >
       {isProcessing && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#fafafa]/80 z-10">
-          <span className="text-[10px] text-black/40">Processing...</span>
+          <span className="font-mono text-[10px] text-black/40 animate-blink">
+            PROCESSING...
+          </span>
         </div>
       )}
       {src && (
         <img
           src={src}
           alt="Dithered"
-          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none"
+          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none border border-black"
           draggable={false}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transition: isPanning ? "none" : "transform 0.1s ease-out",
             imageRendering: "pixelated",
           }}
         />
       )}
-      {/* Zoom indicator */}
       {zoom !== 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full pointer-events-none">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] text-black/40">
           {Math.round(zoom * 100)}%
         </div>
       )}

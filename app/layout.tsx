@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Space_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 import { headers, cookies } from "next/headers";
 import "./globals.css";
 import { auth, configuredProviders } from "@/lib/auth";
 import { AppProvider } from "@/components/app-provider";
 import type { AiModelId } from "@/lib/atoms";
 
-const spaceMono = Space_Mono({
-  variable: "--font-sans",
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
-  title: "Dither",
+  title: "DITHER",
   description: "Transform images into dithered artwork",
 };
 
@@ -51,7 +51,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${spaceMono.variable} font-sans`}>
+      <body className={`${ibmPlexMono.variable} font-mono`}>
         <AppProvider
           initialUser={initialUser}
           providers={configuredProviders}

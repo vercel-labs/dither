@@ -31,7 +31,7 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   }, [prompt]);
 
@@ -46,18 +46,17 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
     aiModels.find((m) => m.id === selectedModel)?.name || "Model";
 
   return (
-    <div className="w-full max-w-xl">
-      {/* Input */}
-      <div className="border-2 border-black bg-white">
+    <div className="w-full">
+      <div className="border border-black flex flex-col">
         <textarea
           ref={textareaRef}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your image..."
+          placeholder="DESCRIBE YOUR IMAGE..."
           rows={1}
           enterKeyHint="send"
           autoFocus
-          className="w-full px-4 py-3 text-sm bg-transparent placeholder:text-black/40 focus:outline-none focus:ring-0 resize-none min-h-[48px] max-h-[160px]"
+          className="w-full px-3 py-3 text-sm bg-transparent placeholder:text-black/30 focus:outline-none resize-none min-h-[44px] max-h-[120px] font-mono"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !isGenerating) {
               e.preventDefault();
@@ -66,15 +65,13 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
           }}
         />
 
-        {/* Bottom Bar */}
-        <div className="flex items-center justify-between border-t-2 border-black px-2 py-2">
-          {/* Model Selector */}
+        <div className="flex items-center justify-between border-t border-black/20 px-3 py-2">
           <div className="relative">
             <button
               onClick={() => setShowModels(!showModels)}
-              className="text-xs uppercase tracking-wider px-2 py-1 hover:bg-black hover:text-white"
+              className="font-mono text-[10px] text-black/50"
             >
-              {selectedModelName} ↓
+              MODEL: {selectedModelName.toUpperCase()}
             </button>
 
             {showModels && (
@@ -83,7 +80,7 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowModels(false)}
                 />
-                <div className="absolute left-0 bottom-full mb-1 bg-white border-2 border-black z-50 min-w-[180px]">
+                <div className="absolute left-0 bottom-full mb-1 bg-[#fafafa] border border-black z-50 min-w-[180px]">
                   {aiModels.map((model) => (
                     <button
                       key={model.id}
@@ -91,13 +88,13 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
                         setSelectedModel(model.id);
                         setShowModels(false);
                       }}
-                      className={`w-full px-3 py-2 text-left text-xs uppercase tracking-wider ${
+                      className={`w-full px-3 py-2 text-left font-mono text-[10px] ${
                         selectedModel === model.id
                           ? "bg-black text-white"
                           : "hover:bg-black hover:text-white"
                       }`}
                     >
-                      {model.name}
+                      {model.name.toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -105,21 +102,19 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
             )}
           </div>
 
-          {/* Generate Button */}
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim() || isGenerating}
-            className="px-4 py-1 text-xs uppercase tracking-wider font-bold bg-black text-white border-2 border-black disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white hover:text-black"
+            className="font-mono text-xs px-4 py-1 bg-black text-white disabled:opacity-30"
           >
-            {isGenerating ? "..." : "Generate"}
+            {isGenerating ? "..." : "GENERATE"}
           </button>
         </div>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="mt-3 px-3 py-2 border-2 border-red-600 text-red-600 text-xs">
-          {error}
+        <div className="mt-2 font-mono text-[10px] text-black/60">
+          ERROR: {error}
         </div>
       )}
     </div>
