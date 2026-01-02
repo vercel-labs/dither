@@ -70,8 +70,8 @@ export const dithers = pgTable("dithers", {
   // Original is stored as {id}-original.png
   // Dither settings
   threshold: text("threshold").notNull().default("255"),
-  contrast: text("contrast").notNull().default("1"),
-  brightness: text("brightness").notNull().default("-100"),
+  contrast: text("contrast").notNull().default("2"),
+  brightness: text("brightness").notNull().default("75"),
   visibility: text("visibility").notNull().default("private"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

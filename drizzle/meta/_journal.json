@@ -36,6 +36,13 @@
       "when": 1767332017799,
       "tag": "0004_new_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767334847449,
+      "tag": "0005_purple_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

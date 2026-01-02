@@ -15,6 +15,7 @@ import {
   isSavingAtom,
   promptAtom,
   resetImageAtom,
+  resetOptionsAtom,
 } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { GenerateArea } from "@/components/generate-area";
@@ -23,7 +24,6 @@ import { DitherGallery } from "@/components/dither-gallery";
 export default function Home() {
   const router = useRouter();
 
-  // Atoms
   const user = useAtomValue(userAtom);
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
   const [originalDataUrl, setOriginalDataUrl] = useAtom(originalDataUrlAtom);
@@ -33,6 +33,7 @@ export default function Home() {
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const [prompt, setPrompt] = useAtom(promptAtom);
   const resetImage = useSetAtom(resetImageAtom);
+  const resetOptions = useSetAtom(resetOptionsAtom);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isNewImageRef = useRef(false);
@@ -69,7 +70,6 @@ export default function Home() {
     }
   }, [originalImage, options, processImage]);
 
-  // Auto-save and redirect when a new image is processed
   useEffect(() => {
     if (!isNewImageRef.current || !processedDataUrl || !user || isSaving)
       return;
@@ -96,7 +96,6 @@ export default function Home() {
           throw new Error(data.error || "Failed to save dither");
         }
 
-        // Reset state before navigating
         resetImage();
         router.push(`/d/${id}`);
       } catch (error) {
@@ -122,6 +121,9 @@ export default function Home() {
     (url: string, promptText?: string) => {
       isNewImageRef.current = true;
 
+      // Reset to default dither options for new images
+      resetOptions();
+
       setOriginalDataUrl(url);
       if (promptText) setPrompt(promptText);
 
@@ -130,43 +132,52 @@ export default function Home() {
       img.onload = () => setOriginalImage(img);
       img.src = url;
     },
-    [setOriginalDataUrl, setOriginalImage, setPrompt],
+    [setOriginalDataUrl, setOriginalImage, setPrompt, resetOptions],
   );
 
   const isWorking = isProcessing || isSaving;
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+    <div className="h-dvh flex flex-col overflow-hidden bg-white text-black">
       <canvas ref={canvasRef} className="hidden" />
 
       <Header />
 
       <main className="flex-1 min-h-0 overflow-y-auto">
-        {/* Generate Area */}
-        <div className="flex items-center justify-center p-4 sm:p-8 pt-8 sm:pt-12 max-h-[80vh]">
-          <div className="w-full max-w-lg flex flex-col items-center">
-            <div className="w-full h-[280px] sm:h-[320px] flex flex-col relative">
-              <GenerateArea onImageGenerated={handleImageUrl} />
-
-              {/* Processing/Saving overlay */}
-              {isWorking && (
-                <div className="absolute inset-0 bg-[#fafafa]/90 flex items-center justify-center z-10">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-6 h-6 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
-                    <span className="text-xs text-black/60">
-                      {isProcessing ? "Processing..." : "Saving..."}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Hero */}
+        <section className="min-h-[60vh] flex flex-col items-center justify-center px-4 py-16">
+          <div className="w-full max-w-xl text-center mb-12">
+            <h1 className="text-3xl sm:text-4xl font-bold uppercase tracking-tight mb-3">
+              Generate.
+              <br />
+              Dither.
+              <br />
+              Share.
+            </h1>
+            <p className="text-sm text-black/60 uppercase tracking-wider">
+              AI images → 1-bit art
+            </p>
           </div>
-        </div>
 
-        {/* Gallery Section */}
-        <div className="px-4 sm:px-8 pb-8">
+          <div className="w-full flex justify-center relative">
+            <GenerateArea onImageGenerated={handleImageUrl} />
+
+            {isWorking && (
+              <div className="absolute inset-0 bg-white/90 flex items-center justify-center z-20">
+                <div className="border-2 border-black px-4 py-2 bg-white">
+                  <span className="text-xs uppercase tracking-wider font-bold">
+                    {isProcessing ? "Processing..." : "Saving..."}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Gallery */}
+        <section className="px-4 pb-16 pt-12">
           <DitherGallery />
-        </div>
+        </section>
       </main>
     </div>
   );

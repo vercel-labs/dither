@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     }
 
     // Create the dither record (imageUrl points to processed image)
+    // Use explicit default dither settings
     const [dither] = await db
       .insert(dithers)
       .values({
@@ -58,6 +59,9 @@ export async function POST(request: Request) {
         title,
         prompt: prompt || null,
         imageUrl,
+        threshold: "255",
+        contrast: "2",
+        brightness: "75",
       })
       .returning();
 

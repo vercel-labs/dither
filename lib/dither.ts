@@ -6,8 +6,8 @@ export interface DitherOptions {
 
 export const defaultOptions: DitherOptions = {
   threshold: 255,
-  contrast: 1,
-  brightness: -100,
+  contrast: 2,
+  brightness: 75,
 };
 
 function clamp(value: number, min: number, max: number): number {

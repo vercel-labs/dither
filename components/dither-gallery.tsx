@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { userAtom } from "@/lib/atoms";
-import { Globe, Lock } from "lucide-react";
 import Link from "next/link";
 
 interface DitherItem {
@@ -26,7 +25,7 @@ function DitherCard({ dither, isOwn }: { dither: DitherItem; isOwn: boolean }) {
   return (
     <Link
       href={`/d/${dither.id}`}
-      className="group block aspect-square relative bg-black/5 overflow-hidden hover:ring-2 hover:ring-black/20 transition-all"
+      className="group block aspect-square relative border-2 border-black bg-white overflow-hidden hover:translate-x-1 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_#000]"
     >
       {dither.imageUrl && (
         <img
@@ -37,24 +36,15 @@ function DitherCard({ dither, isOwn }: { dither: DitherItem; isOwn: boolean }) {
           loading="lazy"
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform">
-        <p className="text-[10px] text-white truncate font-medium">
+
+      {/* Info Bar */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-black px-2 py-1.5 translate-y-full group-hover:translate-y-0">
+        <p className="text-xs truncate font-bold">
           {dither.title || "Untitled"}
         </p>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          {isOwn ? (
-            dither.visibility === "private" ? (
-              <Lock className="w-2.5 h-2.5 text-white/60" />
-            ) : (
-              <Globe className="w-2.5 h-2.5 text-white/60" />
-            )
-          ) : (
-            <span className="text-[9px] text-white/60 truncate">
-              {dither.userName || "Anonymous"}
-            </span>
-          )}
-        </div>
+        <p className="text-[10px] uppercase tracking-wider text-black/60 truncate">
+          {isOwn ? `[${dither.visibility}]` : dither.userName || "Anonymous"}
+        </p>
       </div>
     </Link>
   );
@@ -74,18 +64,23 @@ function GallerySection({
   if (dithers.length === 0 && !emptyMessage) return null;
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-[10px] text-black/40 tracking-[0.2em]">{title}</h2>
+    <section>
+      <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-black">
+        <h2 className="text-xs uppercase tracking-wider font-bold">{title}</h2>
+        <span className="text-xs uppercase tracking-wider">
+          {dithers.length}
+        </span>
+      </div>
       {dithers.length === 0 ? (
-        <p className="text-xs text-black/30">{emptyMessage}</p>
+        <p className="text-xs text-black/50">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {dithers.map((dither) => (
             <DitherCard key={dither.id} dither={dither} isOwn={isOwn} />
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -114,35 +109,31 @@ export function DitherGallery() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto py-8 text-center">
-        <div className="inline-block w-4 h-4 border border-black/20 border-t-black/60 rounded-full animate-spin" />
+      <div className="max-w-4xl mx-auto py-12 text-center">
+        <span className="text-xs uppercase tracking-wider">Loading...</span>
       </div>
     );
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
   const hasAnyDithers =
     data.myDithers.length > 0 || data.publicDithers.length > 0;
 
-  if (!hasAnyDithers) {
-    return null;
-  }
+  if (!hasAnyDithers) return null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-12">
       {user && data.myDithers.length > 0 && (
         <GallerySection
-          title="My Dithers"
+          title="Your Dithers"
           dithers={data.myDithers}
           isOwn={true}
         />
       )}
       {data.publicDithers.length > 0 && (
         <GallerySection
-          title="Public Dithers"
+          title="Community"
           dithers={data.publicDithers}
           isOwn={false}
         />
