@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { dithers, users, favorites } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
@@ -5,6 +6,20 @@ import { headers } from "next/headers";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { DitherGallery } from "@/components/dither-gallery";
 import type { DitherItem } from "@/lib/types";
+
+export const metadata: Metadata = {
+  openGraph: {
+    images: [
+      "https://qh4xf4elntexsvw4.public.blob.vercel-storage.com/dithers/koFl7afapd5aRkckiPwDM-mjxgs3iw-dither.png",
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [
+      "https://qh4xf4elntexsvw4.public.blob.vercel-storage.com/dithers/koFl7afapd5aRkckiPwDM-mjxgs3iw-dither.png",
+    ],
+  },
+};
 
 async function getPublicDithers(): Promise<DitherItem[]> {
   const results = await db
