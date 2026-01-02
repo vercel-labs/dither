@@ -52,7 +52,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       }
     }
 
-    const originalFilename = `${id}-original.png`;
+    const originalFilename = `dithers/${id}-original.png`;
 
     if (isVercelBlobConfigured) {
       // Find the original in Vercel Blob
@@ -66,11 +66,12 @@ export async function GET(request: Request, { params }: RouteParams) {
     } else {
       // Local development - serve from public/uploads
       try {
+        const localFilename = `${id}-original.png`;
         const filePath = join(
           process.cwd(),
           "public",
           "uploads",
-          originalFilename,
+          localFilename,
         );
         const fileBuffer = await readFile(filePath);
 
