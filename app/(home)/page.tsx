@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { dithers, users, favorites } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql, count } from "drizzle-orm";
 import { DitherGallery } from "@/components/dither-gallery";
 import type { DitherItem } from "@/lib/types";
 
@@ -19,11 +19,25 @@ async function getPublicDithers(): Promise<DitherItem[]> {
       userName: users.name,
       userImage: users.image,
       userCustomAvatar: users.customAvatar,
+      favoriteCount: count(favorites.id),
     })
     .from(dithers)
     .leftJoin(users, eq(dithers.userId, users.id))
+    .leftJoin(favorites, eq(dithers.id, favorites.ditherId))
     .where(eq(dithers.visibility, "public"))
-    .orderBy(desc(dithers.createdAt))
+    .groupBy(
+      dithers.id,
+      dithers.title,
+      dithers.imageUrl,
+      dithers.visibility,
+      dithers.status,
+      dithers.createdAt,
+      dithers.userId,
+      users.name,
+      users.image,
+      users.customAvatar,
+    )
+    .orderBy(desc(sql`count(${favorites.id})`), desc(dithers.createdAt))
     .limit(50);
 
   return results.filter((d) => d.imageUrl);
