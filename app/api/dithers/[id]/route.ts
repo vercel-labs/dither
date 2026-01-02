@@ -190,18 +190,40 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
-    // Delete the dither (only if owned by user)
-    const [deleted] = await db
-      .delete(dithers)
-      .where(and(eq(dithers.id, id), eq(dithers.userId, session.user.id)))
-      .returning();
+    // Get the dither first to find associated images
+    const existingDither = await db.query.dithers.findFirst({
+      where: and(eq(dithers.id, id), eq(dithers.userId, session.user.id)),
+    });
 
-    if (!deleted) {
+    if (!existingDither) {
       return NextResponse.json(
         { error: "Dither not found or not authorized" },
         { status: 404 },
       );
     }
+
+    // Delete associated images from storage
+    const deletePromises: Promise<void>[] = [];
+
+    // Delete processed image if it exists
+    if (existingDither.imageUrl) {
+      deletePromises.push(deleteImage(existingDither.imageUrl));
+
+      // Delete original image (derive URL from processed image URL)
+      const originalUrl = existingDither.imageUrl.replace(
+        /-[a-z0-9]+-dither\.png$/i,
+        "-original.png",
+      );
+      deletePromises.push(deleteImage(originalUrl));
+    }
+
+    // Wait for all image deletions (don't fail if some don't exist)
+    await Promise.allSettled(deletePromises);
+
+    // Delete the dither from database
+    await db
+      .delete(dithers)
+      .where(and(eq(dithers.id, id), eq(dithers.userId, session.user.id)));
 
     // Revalidate caches
     revalidatePath("/");
