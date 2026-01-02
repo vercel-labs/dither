@@ -23,7 +23,11 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleGenerate = useCallback(
-    async (prompt: string, modelId: string) => {
+    async (
+      prompt: string,
+      modelId: string,
+      visibility: "public" | "private",
+    ) => {
       if (!user) {
         setError("Please sign in to generate images");
         return;
@@ -40,6 +44,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
             id,
             prompt,
             modelId,
+            visibility,
           }),
         });
 
@@ -105,7 +110,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                   <Link
                     key={tab.path}
                     href={tab.path}
-                    className={`font-mono text-xs pb-2 -mb-2 border-b ${
+                    className={`font-mono text-xs uppercase pb-2 -mb-2 border-b ${
                       isActive
                         ? "text-black border-black"
                         : "text-black/40 border-transparent hover:text-black/60"

@@ -31,7 +31,7 @@ export function ControlsPanel({
   if (!hasImage) return null;
 
   return (
-    <div className="w-full lg:w-56 border-t lg:border-t-0 lg:border-l border-black/20 bg-[#fafafa] p-4 shrink-0 overflow-y-auto">
+    <div className="w-full lg:w-56 border-t lg:border-t-0 lg:border-l border-black/20 bg-[#fafafa] p-4 shrink-0">
       <div className="mb-4 pb-2 border-b border-black/10">
         <span className="font-mono text-[10px] text-black/40">CONTROLS</span>
       </div>
@@ -82,8 +82,8 @@ export function ControlsPanel({
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden lg:flex lg:flex-col lg:h-full">
-        <div className="flex-1 space-y-6">
+      <div className="hidden lg:block">
+        <div className="space-y-6">
           <Slider
             label="Threshold"
             value={options.threshold}
@@ -109,7 +109,7 @@ export function ControlsPanel({
           />
         </div>
 
-        <div className="pt-6 space-y-2 flex-shrink-0 mt-6 border-t border-black/10">
+        <div className="pt-6 space-y-2 mt-6 border-t border-black/10">
           <button
             onClick={onSave}
             disabled={!canSave || isSaving}

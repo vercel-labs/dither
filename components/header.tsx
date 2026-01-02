@@ -18,6 +18,74 @@ const HEART_PATTERN = [
   [0, 0, 0, 1, 1, 0, 0, 0],
 ];
 
+// 7x8 pixel lock pattern (private)
+const LOCK_PATTERN = [
+  [0, 0, 1, 1, 1, 0, 0],
+  [0, 1, 0, 0, 0, 1, 0],
+  [0, 1, 0, 0, 0, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1],
+];
+
+// 8x6 pixel eye pattern (public)
+const EYE_PATTERN = [
+  [0, 0, 1, 1, 1, 1, 0, 0],
+  [0, 1, 0, 0, 0, 0, 1, 0],
+  [1, 0, 0, 1, 1, 0, 0, 1],
+  [1, 0, 0, 1, 1, 0, 0, 1],
+  [0, 1, 0, 0, 0, 0, 1, 0],
+  [0, 0, 1, 1, 1, 1, 0, 0],
+];
+
+// 7x8 pixel trash pattern (delete)
+const TRASH_PATTERN = [
+  [0, 1, 1, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1],
+  [0, 1, 0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 0, 1, 0],
+  [0, 1, 0, 1, 0, 1, 0],
+  [0, 1, 1, 1, 1, 1, 0],
+];
+
+function PixelIcon({
+  pattern,
+  size = 12,
+}: {
+  pattern: number[][];
+  size?: number;
+}) {
+  const height = pattern.length;
+  const width = pattern[0].length;
+  return (
+    <svg
+      width={size}
+      height={(size * height) / width}
+      viewBox={`0 0 ${width} ${height}`}
+      shapeRendering="crispEdges"
+    >
+      {pattern.map((row, y) =>
+        row.map((pixel, x) =>
+          pixel ? (
+            <rect
+              key={`${x}-${y}`}
+              x={x}
+              y={y}
+              width={1}
+              height={1}
+              fill="currentColor"
+            />
+          ) : null,
+        ),
+      )}
+    </svg>
+  );
+}
+
 function PixelHeart({
   filled,
   size = 12,
@@ -285,7 +353,7 @@ export function Header({
   const handleResetAvatar = useCallback(() => {
     setCustomAvatar(null);
     localStorage.removeItem("dither-avatar");
-    setMenuOpen(false);
+    setShowAvatarEditor(false);
   }, []);
 
   useEffect(() => {
@@ -301,8 +369,8 @@ export function Header({
 
   return (
     <>
-      <header className="border-b border-black bg-[#fafafa]">
-        <div className="px-4 h-10 flex items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-black bg-[#fafafa]">
+        <div className="px-4 h-[52px] flex items-center justify-between">
           {/* Left */}
           <div className="flex items-center gap-4">
             <a href="/" className="font-mono text-xs tracking-wider">
@@ -341,22 +409,36 @@ export function Header({
                       )
                     }
                     disabled={isUpdatingVisibility}
-                    className="font-mono text-xs text-black/60 disabled:opacity-50"
+                    className="text-black/60 disabled:opacity-50 hover:text-black"
+                    title={
+                      visibility === "public" ? "Make private" : "Make public"
+                    }
                   >
-                    {visibility.toUpperCase()}
+                    <PixelIcon
+                      pattern={
+                        visibility === "public" ? EYE_PATTERN : LOCK_PATTERN
+                      }
+                      size={12}
+                    />
                   </button>
                 ) : (
-                  <span className="font-mono text-xs text-black/40">
-                    {visibility.toUpperCase()}
+                  <span className="text-black/40" title={visibility}>
+                    <PixelIcon
+                      pattern={
+                        visibility === "public" ? EYE_PATTERN : LOCK_PATTERN
+                      }
+                      size={12}
+                    />
                   </span>
                 )}
                 {isOwner && onDelete && (
                   <button
                     onClick={onDelete}
                     disabled={isDeleting}
-                    className="font-mono text-xs text-black/40 disabled:opacity-50"
+                    className="text-black/40 disabled:opacity-50 hover:text-black"
+                    title="Delete"
                   >
-                    DELETE
+                    <PixelIcon pattern={TRASH_PATTERN} size={12} />
                   </button>
                 )}
               </div>
@@ -374,7 +456,7 @@ export function Header({
             {isLoading ? (
               <DitherLoader size={32} />
             ) : isSignedIn ? (
-              <div className="relative">
+              <div className="relative flex items-center">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -411,17 +493,6 @@ export function Header({
                         className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
                       >
                         EDIT AVATAR
-                      </button>
-                    )}
-                    {customAvatar && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleResetAvatar();
-                        }}
-                        className="w-full px-3 py-2 text-left font-mono text-xs text-black/50 hover:bg-black hover:text-white"
-                      >
-                        RESET AVATAR
                       </button>
                     )}
                     <button
@@ -479,6 +550,8 @@ export function Header({
           src={user.image}
           onClose={() => setShowAvatarEditor(false)}
           onSave={handleAvatarSave}
+          onReset={handleResetAvatar}
+          hasCustomAvatar={!!customAvatar}
         />
       )}
     </>

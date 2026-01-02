@@ -8,9 +8,17 @@ interface AvatarEditorProps {
   src: string;
   onClose: () => void;
   onSave: (dataUrl: string) => void;
+  onReset?: () => void;
+  hasCustomAvatar?: boolean;
 }
 
-export function AvatarEditor({ src, onClose, onSave }: AvatarEditorProps) {
+export function AvatarEditor({
+  src,
+  onClose,
+  onSave,
+  onReset,
+  hasCustomAvatar,
+}: AvatarEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(
     null,
@@ -111,6 +119,14 @@ export function AvatarEditor({ src, onClose, onSave }: AvatarEditorProps) {
 
         {/* Actions */}
         <div className="flex gap-2">
+          {hasCustomAvatar && onReset && (
+            <button
+              onClick={onReset}
+              className="font-mono text-[10px] py-2 px-3 border border-black/20 text-black/40"
+            >
+              RESET
+            </button>
+          )}
           <button
             onClick={onClose}
             className="flex-1 font-mono text-[10px] py-2 border border-black/20 text-black/60"
