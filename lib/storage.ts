@@ -40,6 +40,8 @@ export async function uploadImage(
     const blob = await put(finalFilename, buffer, {
       access: "public",
       contentType: mimeType,
+      addRandomSuffix: false,
+      allowOverwrite: true,
     });
     return blob.url;
   } else {

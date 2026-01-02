@@ -11,8 +11,8 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// Valid ID pattern (alphanumeric only, matching nanoid output)
-const VALID_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+// Valid ID pattern (alphanumeric plus - and _, matching nanoid output)
+const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 function isValidId(id: string): boolean {
   return typeof id === "string" && id.length > 0 && VALID_ID_PATTERN.test(id);

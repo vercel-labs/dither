@@ -27,9 +27,9 @@ const UNLIMITED_USER_IDS = new Set(
     .filter(Boolean),
 );
 
-// Valid ID pattern (alphanumeric only, matching nanoid output)
+// Valid ID pattern (alphanumeric plus - and _, matching nanoid output)
 // Prevents path traversal attacks when ID is used in filenames
-const VALID_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 function isValidId(id: string): boolean {
   return typeof id === "string" && id.length > 0 && VALID_ID_PATTERN.test(id);
