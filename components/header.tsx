@@ -13,128 +13,7 @@ import {
 } from "@/lib/atoms";
 import { AvatarEditor } from "./avatar-editor";
 import type { Visibility } from "@/lib/atoms";
-
-// 8x7 pixel heart pattern
-const HEART_PATTERN = [
-  [0, 1, 1, 0, 0, 1, 1, 0],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 1, 1, 1, 0],
-  [0, 0, 1, 1, 1, 1, 0, 0],
-  [0, 0, 0, 1, 1, 0, 0, 0],
-];
-
-// 7x8 pixel lock pattern (private)
-const LOCK_PATTERN = [
-  [0, 0, 1, 1, 1, 0, 0],
-  [0, 1, 0, 0, 0, 1, 0],
-  [0, 1, 0, 0, 0, 1, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-];
-
-// 8x6 pixel eye pattern (public)
-const EYE_PATTERN = [
-  [0, 0, 1, 1, 1, 1, 0, 0],
-  [0, 1, 0, 0, 0, 0, 1, 0],
-  [1, 0, 0, 1, 1, 0, 0, 1],
-  [1, 0, 0, 1, 1, 0, 0, 1],
-  [0, 1, 0, 0, 0, 0, 1, 0],
-  [0, 0, 1, 1, 1, 1, 0, 0],
-];
-
-// 7x8 pixel trash pattern (delete)
-const TRASH_PATTERN = [
-  [0, 1, 1, 1, 1, 1, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 1, 1, 1, 1, 1, 0],
-];
-
-// 7x7 pixel pencil/edit pattern
-const PENCIL_PATTERN = [
-  [0, 0, 0, 0, 0, 1, 1],
-  [0, 0, 0, 0, 1, 1, 1],
-  [0, 0, 0, 1, 1, 1, 0],
-  [0, 0, 1, 1, 1, 0, 0],
-  [0, 1, 1, 1, 0, 0, 0],
-  [1, 1, 1, 0, 0, 0, 0],
-  [1, 1, 0, 0, 0, 0, 0],
-];
-
-function PixelIcon({
-  pattern,
-  size = 12,
-}: {
-  pattern: number[][];
-  size?: number;
-}) {
-  const height = pattern.length;
-  const width = pattern[0].length;
-  return (
-    <svg
-      width={size}
-      height={(size * height) / width}
-      viewBox={`0 0 ${width} ${height}`}
-      shapeRendering="crispEdges"
-    >
-      {pattern.map((row, y) =>
-        row.map((pixel, x) =>
-          pixel ? (
-            <rect
-              key={`${x}-${y}`}
-              x={x}
-              y={y}
-              width={1}
-              height={1}
-              fill="currentColor"
-            />
-          ) : null,
-        ),
-      )}
-    </svg>
-  );
-}
-
-function PixelHeart({
-  filled,
-  size = 12,
-}: {
-  filled?: boolean;
-  size?: number;
-}) {
-  return (
-    <svg
-      width={size}
-      height={(size * 7) / 8}
-      viewBox="0 0 8 7"
-      shapeRendering="crispEdges"
-    >
-      {HEART_PATTERN.map((row, y) =>
-        row.map((pixel, x) =>
-          pixel ? (
-            <rect
-              key={`${x}-${y}`}
-              x={x}
-              y={y}
-              width={1}
-              height={1}
-              fill={filled ? "black" : "#ccc"}
-            />
-          ) : null,
-        ),
-      )}
-    </svg>
-  );
-}
+import { Heart, Lock, Eye, Trash2, Pencil } from "lucide-react";
 
 function DitherLoader({ size = 24 }: { size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -494,7 +373,7 @@ export function Header() {
                         className="text-black/30 hover:text-black sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         title="Edit title"
                       >
-                        <PixelIcon pattern={PENCIL_PATTERN} size={10} />
+                        <Pencil size={12} strokeWidth={1.5} />
                       </button>
                     )}
                   </div>
@@ -511,8 +390,13 @@ export function Header() {
                 title={
                   isFavorited ? "Remove from favorites" : "Add to favorites"
                 }
+                className={isFavorited ? "text-black" : "text-black/30"}
               >
-                <PixelHeart filled={isFavorited} size={12} />
+                <Heart
+                  size={14}
+                  strokeWidth={1.5}
+                  fill={isFavorited ? "currentColor" : "none"}
+                />
               </button>
             )}
 
@@ -531,21 +415,19 @@ export function Header() {
                       visibility === "public" ? "Make private" : "Make public"
                     }
                   >
-                    <PixelIcon
-                      pattern={
-                        visibility === "public" ? EYE_PATTERN : LOCK_PATTERN
-                      }
-                      size={12}
-                    />
+                    {visibility === "public" ? (
+                      <Eye size={14} strokeWidth={1.5} />
+                    ) : (
+                      <Lock size={14} strokeWidth={1.5} />
+                    )}
                   </button>
                 ) : (
                   <span className="text-black/40" title={visibility}>
-                    <PixelIcon
-                      pattern={
-                        visibility === "public" ? EYE_PATTERN : LOCK_PATTERN
-                      }
-                      size={12}
-                    />
+                    {visibility === "public" ? (
+                      <Eye size={14} strokeWidth={1.5} />
+                    ) : (
+                      <Lock size={14} strokeWidth={1.5} />
+                    )}
                   </span>
                 )}
                 {isOwner && onDelete && (
@@ -555,7 +437,7 @@ export function Header() {
                     className="text-black/40 disabled:opacity-50 hover:text-black"
                     title="Delete"
                   >
-                    <PixelIcon pattern={TRASH_PATTERN} size={12} />
+                    <Trash2 size={14} strokeWidth={1.5} />
                   </button>
                 )}
               </div>

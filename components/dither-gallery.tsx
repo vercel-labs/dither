@@ -14,117 +14,7 @@ import {
   type DownloadOptions,
 } from "@/components/download-dialog";
 import { downloadImageFromUrl } from "@/lib/download";
-
-// 8x7 pixel heart pattern
-const HEART_PATTERN = [
-  [0, 1, 1, 0, 0, 1, 1, 0],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 1, 1, 1, 0],
-  [0, 0, 1, 1, 1, 1, 0, 0],
-  [0, 0, 0, 1, 1, 0, 0, 0],
-];
-
-function PixelIcon({
-  pattern,
-  size = 10,
-}: {
-  pattern: number[][];
-  size?: number;
-}) {
-  const height = pattern.length;
-  const width = pattern[0].length;
-  return (
-    <svg
-      width={size}
-      height={(size * height) / width}
-      viewBox={`0 0 ${width} ${height}`}
-      shapeRendering="crispEdges"
-    >
-      {pattern.map((row, y) =>
-        row.map((pixel, x) =>
-          pixel ? (
-            <rect
-              key={`${x}-${y}`}
-              x={x}
-              y={y}
-              width={1}
-              height={1}
-              fill="black"
-            />
-          ) : null,
-        ),
-      )}
-    </svg>
-  );
-}
-
-function PixelHeart({
-  filled,
-  size = 10,
-}: {
-  filled?: boolean;
-  size?: number;
-}) {
-  return (
-    <svg
-      width={size}
-      height={(size * 7) / 8}
-      viewBox="0 0 8 7"
-      shapeRendering="crispEdges"
-    >
-      {HEART_PATTERN.map((row, y) =>
-        row.map((pixel, x) =>
-          pixel ? (
-            <rect
-              key={`${x}-${y}`}
-              x={x}
-              y={y}
-              width={1}
-              height={1}
-              fill={filled ? "black" : "#ccc"}
-            />
-          ) : null,
-        ),
-      )}
-    </svg>
-  );
-}
-
-// 7x8 pixel lock pattern (private)
-const LOCK_PATTERN = [
-  [0, 0, 1, 1, 1, 0, 0],
-  [0, 1, 0, 0, 0, 1, 0],
-  [0, 1, 0, 0, 0, 1, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1, 1, 1],
-];
-
-// 8x6 pixel eye pattern (public)
-const EYE_PATTERN = [
-  [0, 0, 1, 1, 1, 1, 0, 0],
-  [0, 1, 0, 0, 0, 0, 1, 0],
-  [1, 0, 0, 1, 1, 0, 0, 1],
-  [1, 0, 0, 1, 1, 0, 0, 1],
-  [0, 1, 0, 0, 0, 0, 1, 0],
-  [0, 0, 1, 1, 1, 1, 0, 0],
-];
-
-// 7x8 pixel download icon (arrow down + tray)
-const DOWNLOAD_PATTERN = [
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0, 0],
-  [1, 0, 0, 1, 0, 0, 1],
-  [0, 1, 0, 1, 0, 1, 0],
-  [0, 0, 1, 1, 1, 0, 0],
-  [1, 1, 1, 1, 1, 1, 1],
-];
+import { Heart, Lock, Eye, Download } from "lucide-react";
 
 function VisibilityToggle({
   ditherId,
@@ -173,7 +63,11 @@ function VisibilityToggle({
       className={isUpdating ? "opacity-10" : "opacity-30 hover:opacity-60"}
       disabled={isUpdating}
     >
-      <PixelIcon pattern={isPublic ? EYE_PATTERN : LOCK_PATTERN} size={10} />
+      {isPublic ? (
+        <Eye size={12} strokeWidth={1.5} />
+      ) : (
+        <Lock size={12} strokeWidth={1.5} />
+      )}
     </button>
   );
 }
@@ -282,8 +176,13 @@ function FavoriteButton({
     <button
       onClick={handleToggle}
       title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+      className={isFavorited ? "text-black" : "text-black/30"}
     >
-      <PixelHeart filled={isFavorited} size={10} />
+      <Heart
+        size={12}
+        strokeWidth={1.5}
+        fill={isFavorited ? "currentColor" : "none"}
+      />
     </button>
   );
 }
@@ -363,7 +262,7 @@ function DitherCard({
             className="opacity-30 hover:opacity-60"
             title="Download"
           >
-            <PixelIcon pattern={DOWNLOAD_PATTERN} size={10} />
+            <Download size={12} strokeWidth={1.5} />
           </button>
         )}
 
