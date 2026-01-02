@@ -21,41 +21,6 @@ Only respond with the title, nothing else. No quotes, no punctuation, just 2-3 w
 }
 
 /**
- * Generate a 2-3 word title from an image using vision
- */
-export async function generateTitleFromImage(
-  imageData: string,
-): Promise<string> {
-  try {
-    const result = await generateText({
-      model: "openai/gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              image: imageData,
-            },
-            {
-              type: "text",
-              text: `Look at this dithered black and white image. Generate a creative 2-3 word title that captures its essence.
-Only respond with the title, nothing else. No quotes, no punctuation, just 2-3 words.`,
-            },
-          ],
-        },
-      ],
-      maxOutputTokens: 20,
-    });
-
-    return result.text.trim();
-  } catch (error) {
-    console.error("Error generating title from image:", error);
-    return "Untitled Dither";
-  }
-}
-
-/**
  * Fallback: extract a simple title from the prompt
  */
 function extractTitleFromPrompt(prompt: string): string {

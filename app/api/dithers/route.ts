@@ -2,13 +2,10 @@ import { NextResponse, after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { dithers, users, type DitherStatus } from "@/lib/db/schema";
-import { uploadImage } from "@/lib/storage";
+import { uploadOriginalImage } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import {
-  generateTitleFromPrompt,
-  generateTitleFromImage,
-} from "@/lib/generate-title";
+import { generateTitleFromPrompt } from "@/lib/generate-title";
 import { eq, or, desc, and, gte, sql } from "drizzle-orm";
 import { generateImage } from "ai";
 import { generateGeminiImageUrl } from "@/lib/gemini-image";
@@ -118,7 +115,8 @@ async function generateAndProcessImage(
 
     // Upload only the original image (dithering happens client-side)
     // The dithered version will be saved when the client first views it
-    await uploadImage(imageUrl, `dithers/${id}-original.png`);
+    // Original images are always resized to 1024x1024
+    await uploadOriginalImage(imageUrl, `dithers/${id}-original.png`);
 
     // Update the dither record - imageUrl stays null until client saves dithered version
     await db
@@ -155,118 +153,60 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    const { id, prompt, modelId, visibility = "private" } = body;
 
-    // Check if this is a "generate" request (has prompt and modelId)
-    // or a "save" request (has originalImageData and processedImageData)
-    const isGenerateRequest =
-      body.prompt && body.modelId && !body.originalImageData;
-
-    if (isGenerateRequest) {
-      // Create a pending dither and start background generation
-      const { id, prompt, modelId, visibility = "private" } = body;
-
-      if (!isValidId(id)) {
-        return NextResponse.json(
-          { error: "Invalid ID format" },
-          { status: 400 },
-        );
-      }
-
-      // Check daily generation limit (unless user has unlimited)
-      if (!hasUnlimitedGenerations(session.user.id)) {
-        const todayCount = await getUserDailyGenerationCount(session.user.id);
-        if (todayCount >= DAILY_GENERATION_LIMIT) {
-          return NextResponse.json(
-            {
-              error: `Daily limit reached. You can generate ${DAILY_GENERATION_LIMIT} images per day.`,
-              limitReached: true,
-              limit: DAILY_GENERATION_LIMIT,
-              used: todayCount,
-            },
-            { status: 429 },
-          );
-        }
-      }
-
-      // Create the pending dither record
-      const [dither] = await db
-        .insert(dithers)
-        .values({
-          id,
-          userId: session.user.id,
-          prompt,
-          modelId,
-          visibility,
-          status: "pending",
-          threshold: "255",
-          contrast: "2",
-          brightness: "75",
-        })
-        .returning();
-
-      // Start background generation using after()
-      after(async () => {
-        await generateAndProcessImage(id, prompt, modelId);
-        // Revalidate caches after generation completes
-        revalidatePath("/");
-        revalidatePath("/my");
-      });
-
-      // Revalidate caches immediately for pending state
-      revalidatePath("/");
-      revalidatePath("/my");
-
-      return NextResponse.json({ dither });
+    if (!prompt || !modelId) {
+      return NextResponse.json(
+        { error: "Prompt and modelId are required" },
+        { status: 400 },
+      );
     }
-
-    // Legacy save request - for uploaded images
-    const { id, prompt, originalImageData, processedImageData } = body;
 
     if (!isValidId(id)) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
-    if (!originalImageData || !processedImageData) {
-      return NextResponse.json(
-        { error: "Both original and processed image data are required" },
-        { status: 400 },
-      );
+    // Check daily generation limit (unless user has unlimited)
+    if (!hasUnlimitedGenerations(session.user.id)) {
+      const todayCount = await getUserDailyGenerationCount(session.user.id);
+      if (todayCount >= DAILY_GENERATION_LIMIT) {
+        return NextResponse.json(
+          {
+            error: `Daily limit reached. You can generate ${DAILY_GENERATION_LIMIT} images per day.`,
+            limitReached: true,
+            limit: DAILY_GENERATION_LIMIT,
+            used: todayCount,
+          },
+          { status: 429 },
+        );
+      }
     }
 
-    // Upload both images to storage
-    // Original: dithers/{id}-original.png, Processed: dithers/{id}-{hash}-dither.png
-    const hash = Date.now().toString(36);
-    const [, imageUrl] = await Promise.all([
-      uploadImage(originalImageData, `dithers/${id}-original.png`),
-      uploadImage(processedImageData, `dithers/${id}-${hash}-dither.png`),
-    ]);
-
-    // Generate title based on whether we have a prompt (generated) or not (uploaded)
-    let title: string;
-    if (prompt) {
-      title = await generateTitleFromPrompt(prompt);
-    } else {
-      title = await generateTitleFromImage(originalImageData);
-    }
-
-    // Create the dither record (imageUrl points to processed image)
-    // Use explicit default dither settings
+    // Create the pending dither record
     const [dither] = await db
       .insert(dithers)
       .values({
         id,
         userId: session.user.id,
-        title,
-        prompt: prompt || null,
-        imageUrl,
+        prompt,
+        modelId,
+        visibility,
+        status: "pending",
         threshold: "255",
         contrast: "2",
         brightness: "75",
-        status: "ready",
       })
       .returning();
 
-    // Revalidate caches
+    // Start background generation using after()
+    after(async () => {
+      await generateAndProcessImage(id, prompt, modelId);
+      // Revalidate caches after generation completes
+      revalidatePath("/");
+      revalidatePath("/my");
+    });
+
+    // Revalidate caches immediately for pending state
     revalidatePath("/");
     revalidatePath("/my");
 

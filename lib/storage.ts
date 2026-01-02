@@ -2,8 +2,12 @@ import { put, del } from "@vercel/blob";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { generateId } from "./id";
+import sharp from "sharp";
 
 const isVercelBlobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
+
+// Standard size for original images
+const ORIGINAL_IMAGE_SIZE = 1024;
 
 /**
  * Upload an image to storage (Vercel Blob or local filesystem)
@@ -53,6 +57,75 @@ export async function uploadImage(
 
     // Return a URL that works in development
     return `/uploads/${finalFilename}`;
+  }
+}
+
+/**
+ * Resize an image buffer to a target size (square, cover fit)
+ * @param buffer - The image buffer to resize
+ * @param size - Target size (width and height)
+ * @returns Resized image buffer as PNG
+ */
+async function resizeImageBuffer(
+  buffer: Buffer,
+  size: number,
+): Promise<Buffer> {
+  return sharp(buffer)
+    .resize(size, size, {
+      fit: "cover",
+      position: "center",
+    })
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Upload an original image to storage, resized to 1024x1024
+ * @param data - Base64 data URL or raw base64 string
+ * @param filename - Filename for the image
+ * @returns Public URL of the uploaded image
+ */
+export async function uploadOriginalImage(
+  data: string,
+  filename: string,
+): Promise<string> {
+  // Extract base64 data
+  let base64Data: string;
+
+  if (data.startsWith("data:")) {
+    const matches = data.match(/^data:([^;]+);base64,(.+)$/);
+    if (matches) {
+      base64Data = matches[2];
+    } else {
+      throw new Error("Invalid data URL format");
+    }
+  } else {
+    base64Data = data;
+  }
+
+  const buffer = Buffer.from(base64Data, "base64");
+
+  // Resize to 1024x1024
+  const resizedBuffer = await resizeImageBuffer(buffer, ORIGINAL_IMAGE_SIZE);
+
+  if (isVercelBlobConfigured) {
+    // Upload to Vercel Blob
+    const blob = await put(filename, resizedBuffer, {
+      access: "public",
+      contentType: "image/png",
+      addRandomSuffix: false,
+    });
+    return blob.url;
+  } else {
+    // Store locally for development
+    const uploadDir = join(process.cwd(), "public", "uploads");
+    await mkdir(uploadDir, { recursive: true });
+
+    const filePath = join(uploadDir, filename);
+    await writeFile(filePath, resizedBuffer);
+
+    // Return a URL that works in development
+    return `/uploads/${filename}`;
   }
 }
 
