@@ -83,6 +83,11 @@ export default async function DitherPage({ params }: DitherPageProps) {
       prompt={dither.prompt}
       visibility={dither.visibility as Visibility}
       isOwner={isOwner}
+      savedSettings={{
+        threshold: Number(dither.threshold),
+        contrast: Number(dither.contrast),
+        brightness: Number(dither.brightness),
+      }}
     />
   );
 }

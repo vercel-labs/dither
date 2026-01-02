@@ -3,18 +3,20 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { applyDither } from "@/lib/dither";
+import type { DitherOptions } from "@/lib/dither";
 import {
   originalImageAtom,
   originalDataUrlAtom,
   processedDataUrlAtom,
   ditherOptionsAtom,
   isProcessingAtom,
+  isSavingAtom,
   promptAtom,
-  resetOptionsAtom,
 } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
+import { getOriginalImageUrl } from "@/lib/url";
 import type { Visibility } from "@/lib/db/schema";
 
 interface DitherViewProps {
@@ -24,6 +26,7 @@ interface DitherViewProps {
   prompt: string | null;
   visibility: Visibility;
   isOwner: boolean;
+  savedSettings: DitherOptions;
 }
 
 export function DitherView({
@@ -33,15 +36,16 @@ export function DitherView({
   prompt: initialPrompt,
   visibility: initialVisibility,
   isOwner,
+  savedSettings,
 }: DitherViewProps) {
   // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
   const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
   const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
-  const options = useAtomValue(ditherOptionsAtom);
+  const [options, setOptions] = useAtom(ditherOptionsAtom);
   const setIsProcessing = useSetAtom(isProcessingAtom);
+  const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const setPrompt = useSetAtom(promptAtom);
-  const resetOptions = useSetAtom(resetOptionsAtom);
 
   // Visibility state
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
@@ -49,24 +53,30 @@ export function DitherView({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Load the saved image on mount
+  // Load the saved image and settings on mount
   useEffect(() => {
     if (initialPrompt) setPrompt(initialPrompt);
 
-    // For a saved dither, the imageUrl IS already the processed image
-    // So we just display it directly without re-processing
-    setProcessedDataUrl(imageUrl);
-    setOriginalDataUrl(imageUrl);
+    // Initialize with saved settings
+    setOptions(savedSettings);
 
-    // Also load it as an image element for potential re-processing
+    // Display the processed image immediately
+    setProcessedDataUrl(imageUrl);
+
+    // Load the original image for re-processing
+    const originalUrl = getOriginalImageUrl(imageUrl);
+    setOriginalDataUrl(originalUrl);
+
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => setOriginalImage(img);
-    img.src = imageUrl;
+    img.src = originalUrl;
   }, [
     imageUrl,
     initialPrompt,
+    savedSettings,
     setPrompt,
+    setOptions,
     setProcessedDataUrl,
     setOriginalDataUrl,
     setOriginalImage,
@@ -118,15 +128,32 @@ export function DitherView({
     link.click();
   }, [processedDataUrl, id]);
 
-  const handleReset = useCallback(() => {
-    // Go back to home page
-    window.location.href = "/";
-  }, []);
+  const handleSave = useCallback(async () => {
+    if (!processedDataUrl || !isOwner || isSaving) return;
 
-  const handleSave = useCallback(() => {
-    // Already saved - just download
-    handleDownload();
-  }, [handleDownload]);
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/dithers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageData: processedDataUrl,
+          threshold: options.threshold,
+          contrast: options.contrast,
+          brightness: options.brightness,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save");
+      }
+    } catch (error) {
+      console.error("Error saving dither:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [processedDataUrl, id, options, isOwner, isSaving, setIsSaving]);
 
   const handleVisibilityChange = useCallback(
     async (newVisibility: Visibility) => {
@@ -154,6 +181,19 @@ export function DitherView({
     [id, isOwner, isUpdatingVisibility],
   );
 
+  // Keyboard shortcut: Cmd+S / Ctrl+S to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave]);
+
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
       <canvas ref={canvasRef} className="hidden" />
@@ -174,13 +214,10 @@ export function DitherView({
 
         {/* Controls Panel */}
         <ControlsPanel
-          onDownload={handleDownload}
           onSave={handleSave}
-          onReset={handleReset}
-          onResetSettings={resetOptions}
-          saveLabel="Download"
-          resetLabel="New Dither"
-          alwaysEnableSave
+          onDownload={handleDownload}
+          saveLabel="Save"
+          alwaysEnableSave={isOwner}
         />
       </main>
     </div>

@@ -38,13 +38,6 @@ export const hasImageAtom = atom(
 export const ditherOptionsAtom = atom<DitherOptions>(defaultOptions);
 
 // Individual option atoms for fine-grained updates
-export const algorithmAtom = atom(
-  (get) => get(ditherOptionsAtom).algorithm,
-  (get, set, algorithm: DitherOptions["algorithm"]) => {
-    set(ditherOptionsAtom, { ...get(ditherOptionsAtom), algorithm });
-  },
-);
-
 export const thresholdAtom = atom(
   (get) => get(ditherOptionsAtom).threshold,
   (get, set, threshold: number) => {
@@ -66,24 +59,10 @@ export const brightnessAtom = atom(
   },
 );
 
-export const scaleAtom = atom(
-  (get) => get(ditherOptionsAtom).scale,
-  (get, set, scale: number) => {
-    set(ditherOptionsAtom, { ...get(ditherOptionsAtom), scale });
-  },
-);
-
 // =============================================================================
 // UI State Atoms
 // =============================================================================
 
-export type InputMode = "upload" | "generate";
-
-export const inputModeAtom = atomWithStorage<InputMode>(
-  "input-mode",
-  "generate",
-  createCookieStorage<InputMode>(),
-);
 export const isProcessingAtom = atom(false);
 export const isSavingAtom = atom(false);
 export const promptAtom = atom<string | null>(null);
@@ -127,12 +106,6 @@ export const canDownloadAtom = atom(
 export const canSaveAtom = atom(
   (get) => get(processedDataUrlAtom) !== null && get(userAtom) !== null,
 );
-
-// Show threshold slider for certain algorithms
-export const showThresholdAtom = atom((get) => {
-  const algorithm = get(algorithmAtom);
-  return ["floyd-steinberg", "atkinson", "threshold"].includes(algorithm);
-});
 
 // =============================================================================
 // Actions (write-only atoms for complex operations)

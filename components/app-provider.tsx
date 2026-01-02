@@ -6,18 +6,15 @@ import { ReactNode } from "react";
 import {
   userAtom,
   providersAtom,
-  inputModeAtom,
   generatePromptAtom,
   selectedModelAtom,
   type User,
-  type InputMode,
   type AiModelId,
 } from "@/lib/atoms";
 
 interface HydrateAtomsProps {
   initialUser: User | null;
   providers: string[];
-  initialInputMode: InputMode;
   initialPrompt: string;
   initialSelectedModel: AiModelId;
   children: ReactNode;
@@ -26,7 +23,6 @@ interface HydrateAtomsProps {
 function HydrateAtoms({
   initialUser,
   providers,
-  initialInputMode,
   initialPrompt,
   initialSelectedModel,
   children,
@@ -34,7 +30,6 @@ function HydrateAtoms({
   useHydrateAtoms([
     [userAtom, initialUser],
     [providersAtom, providers],
-    [inputModeAtom, initialInputMode],
     [generatePromptAtom, initialPrompt],
     [selectedModelAtom, initialSelectedModel],
   ] as const);
@@ -45,7 +40,6 @@ interface AppProviderProps {
   children: ReactNode;
   initialUser: User | null;
   providers: string[];
-  initialInputMode: InputMode;
   initialPrompt: string;
   initialSelectedModel: AiModelId;
 }
@@ -54,7 +48,6 @@ export function AppProvider({
   children,
   initialUser,
   providers,
-  initialInputMode,
   initialPrompt,
   initialSelectedModel,
 }: AppProviderProps) {
@@ -63,7 +56,6 @@ export function AppProvider({
       <HydrateAtoms
         initialUser={initialUser}
         providers={providers}
-        initialInputMode={initialInputMode}
         initialPrompt={initialPrompt}
         initialSelectedModel={initialSelectedModel}
       >

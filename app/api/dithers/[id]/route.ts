@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { dithers, VISIBILITY_OPTIONS, type Visibility } from "@/lib/db/schema";
+import { uploadImage } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
@@ -23,7 +24,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const body = await request.json();
 
     // Build update object from allowed fields
-    const updates: Partial<{ visibility: Visibility }> = {};
+    const updates: Partial<{
+      visibility: Visibility;
+      imageUrl: string;
+      threshold: string;
+      contrast: string;
+      brightness: string;
+    }> = {};
 
     if (body.visibility !== undefined) {
       if (!VISIBILITY_OPTIONS.includes(body.visibility)) {
@@ -35,6 +42,23 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         );
       }
       updates.visibility = body.visibility;
+    }
+
+    // Handle image upload
+    if (body.imageData) {
+      const imageUrl = await uploadImage(body.imageData, `${id}.png`);
+      updates.imageUrl = imageUrl;
+    }
+
+    // Handle dither settings
+    if (body.threshold !== undefined) {
+      updates.threshold = String(body.threshold);
+    }
+    if (body.contrast !== undefined) {
+      updates.contrast = String(body.contrast);
+    }
+    if (body.brightness !== undefined) {
+      updates.brightness = String(body.brightness);
     }
 
     if (Object.keys(updates).length === 0) {

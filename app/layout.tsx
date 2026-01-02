@@ -4,7 +4,7 @@ import { headers, cookies } from "next/headers";
 import "./globals.css";
 import { auth, configuredProviders } from "@/lib/auth";
 import { AppProvider } from "@/components/app-provider";
-import type { InputMode, AiModelId } from "@/lib/atoms";
+import type { AiModelId } from "@/lib/atoms";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-serif",
@@ -48,10 +48,6 @@ export default async function RootLayout({
 
   // Read persisted state from cookies
   const cookieStore = await cookies();
-  const initialInputMode = parseJSON<InputMode>(
-    cookieStore.get("input-mode")?.value,
-    "upload",
-  );
   const initialPrompt = parseJSON<string>(
     cookieStore.get("generate-prompt")?.value,
     "",
@@ -69,7 +65,6 @@ export default async function RootLayout({
         <AppProvider
           initialUser={initialUser}
           providers={configuredProviders}
-          initialInputMode={initialInputMode}
           initialPrompt={initialPrompt}
           initialSelectedModel={initialSelectedModel}
         >

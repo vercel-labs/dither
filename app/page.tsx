@@ -11,15 +11,12 @@ import {
   originalDataUrlAtom,
   processedDataUrlAtom,
   ditherOptionsAtom,
-  inputModeAtom,
   isProcessingAtom,
   isSavingAtom,
   promptAtom,
   resetImageAtom,
 } from "@/lib/atoms";
 import { Header } from "@/components/header";
-import { ModeToggle } from "@/components/mode-toggle";
-import { UploadArea } from "@/components/upload-area";
 import { GenerateArea } from "@/components/generate-area";
 import { DitherGallery } from "@/components/dither-gallery";
 
@@ -29,10 +26,9 @@ export default function Home() {
   // Atoms
   const user = useAtomValue(userAtom);
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
-  const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
+  const [originalDataUrl, setOriginalDataUrl] = useAtom(originalDataUrlAtom);
   const [processedDataUrl, setProcessedDataUrl] = useAtom(processedDataUrlAtom);
   const options = useAtomValue(ditherOptionsAtom);
-  const inputMode = useAtomValue(inputModeAtom);
   const [isProcessing, setIsProcessing] = useAtom(isProcessingAtom);
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const [prompt, setPrompt] = useAtom(promptAtom);
@@ -90,7 +86,8 @@ export default function Home() {
           body: JSON.stringify({
             id,
             prompt,
-            imageData: processedDataUrl,
+            originalImageData: originalDataUrl,
+            processedImageData: processedDataUrl,
           }),
         });
 
@@ -112,6 +109,7 @@ export default function Home() {
     autoSave();
   }, [
     processedDataUrl,
+    originalDataUrl,
     user,
     prompt,
     router,
@@ -119,26 +117,6 @@ export default function Home() {
     isSaving,
     resetImage,
   ]);
-
-  const handleFile = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith("image/")) return;
-
-      isNewImageRef.current = true;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        setOriginalDataUrl(dataUrl);
-
-        const img = new window.Image();
-        img.onload = () => setOriginalImage(img);
-        img.src = dataUrl;
-      };
-      reader.readAsDataURL(file);
-    },
-    [setOriginalDataUrl, setOriginalImage],
-  );
 
   const handleImageUrl = useCallback(
     (url: string, promptText?: string) => {
@@ -164,17 +142,11 @@ export default function Home() {
       <Header />
 
       <main className="flex-1 min-h-0 overflow-y-auto">
-        {/* Upload/Generate Area */}
+        {/* Generate Area */}
         <div className="flex items-center justify-center p-4 sm:p-8 pt-8 sm:pt-12 max-h-[80vh]">
           <div className="w-full max-w-lg flex flex-col items-center">
-            <ModeToggle />
-
             <div className="w-full h-[280px] sm:h-[320px] flex flex-col relative">
-              {inputMode === "upload" ? (
-                <UploadArea onFileSelect={handleFile} disabled={isWorking} />
-              ) : (
-                <GenerateArea onImageGenerated={handleImageUrl} />
-              )}
+              <GenerateArea onImageGenerated={handleImageUrl} />
 
               {/* Processing/Saving overlay */}
               {isWorking && (

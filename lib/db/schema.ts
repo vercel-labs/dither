@@ -66,7 +66,12 @@ export const dithers = pgTable("dithers", {
     .references(() => users.id),
   title: text("title"),
   prompt: text("prompt"),
-  imageUrl: text("image_url"),
+  imageUrl: text("image_url"), // The processed/dithered version ({id}.png)
+  // Original is stored as {id}-original.png
+  // Dither settings
+  threshold: text("threshold").notNull().default("255"),
+  contrast: text("contrast").notNull().default("1"),
+  brightness: text("brightness").notNull().default("-100"),
   visibility: text("visibility").notNull().default("private"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

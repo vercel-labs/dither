@@ -33,6 +33,7 @@ function DitherCard({ dither, isOwn }: { dither: DitherItem; isOwn: boolean }) {
           src={dither.imageUrl}
           alt={dither.title || "Dither"}
           className="w-full h-full object-cover"
+          style={{ imageRendering: "pixelated" }}
           loading="lazy"
         />
       )}
@@ -78,7 +79,7 @@ function GallerySection({
       {dithers.length === 0 ? (
         <p className="text-xs text-black/30">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
           {dithers.map((dither) => (
             <DitherCard key={dither.id} dither={dither} isOwn={isOwn} />
           ))}

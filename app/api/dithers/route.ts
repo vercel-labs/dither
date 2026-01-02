@@ -20,31 +20,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, prompt, imageData } = await request.json();
+    const { id, prompt, originalImageData, processedImageData } =
+      await request.json();
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    if (!imageData) {
+    if (!originalImageData || !processedImageData) {
       return NextResponse.json(
-        { error: "Image data is required" },
+        { error: "Both original and processed image data are required" },
         { status: 400 },
       );
     }
 
-    // Upload the image to storage
-    const imageUrl = await uploadImage(imageData, `${id}.png`);
+    // Upload both images to storage
+    // Original: {id}-original.png, Processed: {id}.png
+    const [, imageUrl] = await Promise.all([
+      uploadImage(originalImageData, `${id}-original.png`),
+      uploadImage(processedImageData, `${id}.png`),
+    ]);
 
     // Generate title based on whether we have a prompt (generated) or not (uploaded)
     let title: string;
     if (prompt) {
       title = await generateTitleFromPrompt(prompt);
     } else {
-      title = await generateTitleFromImage(imageData);
+      title = await generateTitleFromImage(originalImageData);
     }
 
-    // Create the dither record
+    // Create the dither record (imageUrl points to processed image)
     const [dither] = await db
       .insert(dithers)
       .values({

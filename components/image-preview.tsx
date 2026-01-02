@@ -9,7 +9,7 @@ import {
 } from "@/lib/atoms";
 
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 2;
+const MAX_ZOOM = 5;
 
 export function ImagePreview() {
   const processedDataUrl = useAtomValue(processedDataUrlAtom);
@@ -290,6 +290,7 @@ export function ImagePreview() {
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transition: isPanning ? "none" : "transform 0.1s ease-out",
+            imageRendering: "pixelated",
           }}
         />
       )}

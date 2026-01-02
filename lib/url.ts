@@ -6,3 +6,9 @@ export function getBaseUrl(): string {
   // Development fallback
   return "http://localhost:3000";
 }
+
+// Convert processed image URL to original image URL
+// {id}.png -> {id}-original.png
+export function getOriginalImageUrl(processedUrl: string): string {
+  return processedUrl.replace(/\.png$/, "-original.png");
+}

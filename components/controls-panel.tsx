@@ -2,90 +2,47 @@
 
 import { useAtom, useAtomValue } from "jotai";
 import { Slider } from "./slider";
-import type { DitherAlgorithm } from "@/lib/dither";
 import {
   ditherOptionsAtom,
   hasImageAtom,
-  canDownloadAtom,
   canSaveAtom,
   isSavingAtom,
-  showThresholdAtom,
 } from "@/lib/atoms";
 
-const algorithms: { value: DitherAlgorithm; label: string }[] = [
-  { value: "floyd-steinberg", label: "Floyd-Steinberg" },
-  { value: "atkinson", label: "Atkinson" },
-  { value: "ordered", label: "Ordered" },
-  { value: "bayer", label: "Bayer" },
-  { value: "threshold", label: "Threshold" },
-];
-
 interface ControlsPanelProps {
-  onDownload: () => void;
   onSave: () => void;
-  onReset: () => void;
-  onResetSettings: () => void;
+  onDownload: () => void;
   saveLabel?: string;
-  resetLabel?: string;
   alwaysEnableSave?: boolean;
 }
 
 export function ControlsPanel({
-  onDownload,
   onSave,
-  onReset,
-  onResetSettings,
+  onDownload,
   saveLabel = "Save",
-  resetLabel,
   alwaysEnableSave = false,
 }: ControlsPanelProps) {
   const [options, setOptions] = useAtom(ditherOptionsAtom);
   const hasImage = useAtomValue(hasImageAtom);
-  const canDownload = useAtomValue(canDownloadAtom);
   const canSaveAtomValue = useAtomValue(canSaveAtom);
   const canSave = alwaysEnableSave || canSaveAtomValue;
   const isSaving = useAtomValue(isSavingAtom);
-  const showThreshold = useAtomValue(showThresholdAtom);
 
   if (!hasImage) return null;
 
   return (
     <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-black/10 p-4 sm:p-8 shrink-0 overflow-y-auto">
-      {/* Mobile: Horizontal layout for algorithm */}
+      {/* Mobile layout */}
       <div className="lg:hidden space-y-6">
-        {/* Algorithm - horizontal scroll on mobile */}
-        <div className="space-y-3">
-          <h3 className="text-[10px] text-black/40">Algorithm</h3>
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-8 sm:px-8">
-            {algorithms.map((algo) => (
-              <button
-                key={algo.value}
-                onClick={() =>
-                  setOptions({ ...options, algorithm: algo.value })
-                }
-                className={`flex-shrink-0 text-[10px] px-3 py-2 border transition-colors ${
-                  options.algorithm === algo.value
-                    ? "border-black bg-black text-white"
-                    : "border-black/20 text-black/40 active:border-black active:text-black"
-                }`}
-              >
-                {algo.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Sliders in 2-column grid on mobile */}
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
-          {showThreshold && (
-            <Slider
-              label="Threshold"
-              value={options.threshold}
-              onChange={(v) => setOptions({ ...options, threshold: v })}
-              min={0}
-              max={255}
-            />
-          )}
+          <Slider
+            label="Threshold"
+            value={options.threshold}
+            onChange={(v) => setOptions({ ...options, threshold: v })}
+            min={0}
+            max={255}
+          />
 
           <Slider
             label="Contrast"
@@ -104,15 +61,6 @@ export function ControlsPanel({
             min={-100}
             max={100}
           />
-
-          <Slider
-            label="Scale"
-            value={options.scale}
-            onChange={(v) => setOptions({ ...options, scale: v })}
-            min={1}
-            max={8}
-            formatValue={(v) => `${v}×`}
-          />
         </div>
 
         {/* Actions - side by side on mobile */}
@@ -128,86 +76,43 @@ export function ControlsPanel({
           </button>
           <button
             onClick={onDownload}
-            disabled={!canDownload}
             className="text-[10px] px-4 py-3 
               text-black/40 active:text-black transition-colors"
           >
             Download
           </button>
-          <button
-            onClick={onResetSettings}
-            className="text-[10px] px-4 py-3 
-              text-black/40 active:text-black transition-colors"
-          >
-            Reset
-          </button>
         </div>
       </div>
 
-      {/* Desktop: Original vertical layout */}
+      {/* Desktop layout */}
       <div className="hidden lg:flex lg:flex-col lg:h-full">
-        <div className="flex-1 space-y-10 overflow-y-auto">
-          {/* Algorithm */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] text-black/40">Algorithm</h3>
-            <div className="space-y-2">
-              {algorithms.map((algo) => (
-                <button
-                  key={algo.value}
-                  onClick={() =>
-                    setOptions({ ...options, algorithm: algo.value })
-                  }
-                  className={`block w-full text-left text-xs py-2 transition-colors ${
-                    options.algorithm === algo.value
-                      ? "text-black"
-                      : "text-black/30 hover:text-black/60"
-                  }`}
-                >
-                  {algo.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Sliders */}
+        <div className="flex-1 space-y-6 overflow-y-auto">
+          <Slider
+            label="Threshold"
+            value={options.threshold}
+            onChange={(v) => setOptions({ ...options, threshold: v })}
+            min={0}
+            max={255}
+          />
 
-          {/* Sliders */}
-          <div className="space-y-6">
-            {showThreshold && (
-              <Slider
-                label="Threshold"
-                value={options.threshold}
-                onChange={(v) => setOptions({ ...options, threshold: v })}
-                min={0}
-                max={255}
-              />
-            )}
+          <Slider
+            label="Contrast"
+            value={options.contrast}
+            onChange={(v) => setOptions({ ...options, contrast: v })}
+            min={0.5}
+            max={2}
+            step={0.05}
+            formatValue={(v) => v.toFixed(2)}
+          />
 
-            <Slider
-              label="Contrast"
-              value={options.contrast}
-              onChange={(v) => setOptions({ ...options, contrast: v })}
-              min={0.5}
-              max={2}
-              step={0.05}
-              formatValue={(v) => v.toFixed(2)}
-            />
-
-            <Slider
-              label="Brightness"
-              value={options.brightness}
-              onChange={(v) => setOptions({ ...options, brightness: v })}
-              min={-100}
-              max={100}
-            />
-
-            <Slider
-              label="Scale"
-              value={options.scale}
-              onChange={(v) => setOptions({ ...options, scale: v })}
-              min={1}
-              max={8}
-              formatValue={(v) => `${v}×`}
-            />
-          </div>
+          <Slider
+            label="Brightness"
+            value={options.brightness}
+            onChange={(v) => setOptions({ ...options, brightness: v })}
+            min={-100}
+            max={100}
+          />
         </div>
 
         {/* Actions */}
@@ -223,19 +128,10 @@ export function ControlsPanel({
           </button>
           <button
             onClick={onDownload}
-            disabled={!canDownload}
             className="w-full text-[10px] py-3 border border-black/20
-              text-black/60 hover:border-black hover:text-black transition-colors
-              disabled:opacity-30 disabled:cursor-not-allowed"
+              text-black/60 hover:border-black hover:text-black transition-colors"
           >
             Download
-          </button>
-          <button
-            onClick={onResetSettings}
-            className="w-full text-[10px] py-3 
-              text-black/40 hover:text-black transition-colors"
-          >
-            {resetLabel || "Reset Settings"}
           </button>
         </div>
       </div>
