@@ -7,6 +7,49 @@ import { userAtom, providersAtom } from "@/lib/atoms";
 import { AvatarEditor } from "./avatar-editor";
 import type { Visibility } from "@/lib/db/schema";
 
+// 8x7 pixel heart pattern
+const HEART_PATTERN = [
+  [0, 1, 1, 0, 0, 1, 1, 0],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 1, 1, 1, 0],
+  [0, 0, 1, 1, 1, 1, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+];
+
+function PixelHeart({
+  filled,
+  size = 12,
+}: {
+  filled?: boolean;
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={(size * 7) / 8}
+      viewBox="0 0 8 7"
+      shapeRendering="crispEdges"
+    >
+      {HEART_PATTERN.map((row, y) =>
+        row.map((pixel, x) =>
+          pixel ? (
+            <rect
+              key={`${x}-${y}`}
+              x={x}
+              y={y}
+              width={1}
+              height={1}
+              fill={filled ? "black" : "#ccc"}
+            />
+          ) : null,
+        ),
+      )}
+    </svg>
+  );
+}
+
 function DitherLoader({ size = 24 }: { size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const internalSize = size * 4;
@@ -278,8 +321,13 @@ export function Header({
           {/* Right */}
           <div className="flex items-center gap-4">
             {showFavorite && onFavoriteToggle && (
-              <button onClick={onFavoriteToggle} className="font-mono text-xs">
-                {isFavorited ? "★" : "☆"}
+              <button
+                onClick={onFavoriteToggle}
+                title={
+                  isFavorited ? "Remove from favorites" : "Add to favorites"
+                }
+              >
+                <PixelHeart filled={isFavorited} size={12} />
               </button>
             )}
 

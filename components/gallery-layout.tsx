@@ -1,35 +1,42 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAtomValue, useSetAtom } from "jotai";
+import Link from "next/link";
 import { generateId } from "@/lib/id";
 import { userAtom, generateErrorAtom } from "@/lib/atoms";
 import { Header } from "@/components/header";
 import { GenerateArea } from "@/components/generate-area";
 import { DitherGallery } from "@/components/dither-gallery";
-import type { DitherItem } from "@/app/page";
+import type { DitherItem } from "@/lib/types";
 
-type Tab = "popular" | "favorites" | "yours";
-
-interface HomeClientProps {
-  myDithers: DitherItem[];
-  publicDithers: DitherItem[];
-  favoriteDithers: DitherItem[];
+interface GalleryLayoutProps {
+  dithers: DitherItem[];
+  favoritedIds: string[];
   isSignedIn: boolean;
+  showUser: boolean;
+  isOwnDithers?: boolean;
 }
 
-export function HomeClient({
-  myDithers,
-  publicDithers,
-  favoriteDithers,
+const tabs = [
+  { path: "/", label: "Popular", requiresAuth: false },
+  { path: "/fav", label: "Favorites", requiresAuth: true },
+  { path: "/my", label: "My Dithers", requiresAuth: true },
+];
+
+export function GalleryLayout({
+  dithers,
+  favoritedIds,
   isSignedIn,
-}: HomeClientProps) {
+  showUser,
+  isOwnDithers = false,
+}: GalleryLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAtomValue(userAtom);
   const setError = useSetAtom(generateErrorAtom);
   const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("popular");
 
   const handleGenerate = useCallback(
     async (prompt: string, modelId: string) => {
@@ -66,25 +73,6 @@ export function HomeClient({
     },
     [user, router, setError],
   );
-
-  const getDisplayedDithers = () => {
-    switch (activeTab) {
-      case "popular":
-        return publicDithers;
-      case "favorites":
-        return favoriteDithers;
-      case "yours":
-        return myDithers;
-      default:
-        return publicDithers;
-    }
-  };
-
-  const tabs: { id: Tab; label: string; requiresAuth: boolean }[] = [
-    { id: "popular", label: "Popular", requiresAuth: false },
-    { id: "favorites", label: "Favorites", requiresAuth: true },
-    { id: "yours", label: "Yours", requiresAuth: true },
-  ];
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-black">
@@ -123,29 +111,32 @@ export function HomeClient({
             {/* Tabs */}
             <div className="flex items-center gap-4 mb-6 border-b border-black/10 pb-2">
               {tabs.map((tab) => {
-                // Hide auth-required tabs if not signed in
                 if (tab.requiresAuth && !isSignedIn) return null;
 
+                const isActive = pathname === tab.path;
+
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                  <Link
+                    key={tab.path}
+                    href={tab.path}
                     className={`font-mono text-xs pb-2 -mb-2 border-b ${
-                      activeTab === tab.id
+                      isActive
                         ? "text-black border-black"
-                        : "text-black/40 border-transparent"
+                        : "text-black/40 border-transparent hover:text-black/60"
                     }`}
                   >
                     {tab.label}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
 
             {/* Gallery content */}
             <DitherGallery
-              dithers={getDisplayedDithers()}
-              showUser={activeTab !== "yours"}
+              dithers={dithers}
+              showUser={showUser}
+              favoritedIds={favoritedIds}
+              isOwnDithers={isOwnDithers}
             />
           </div>
         </section>

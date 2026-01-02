@@ -492,7 +492,7 @@ export function DitherView({
         isDeleting={isDeleting}
         isFavorited={isFavorited}
         onFavoriteToggle={handleFavoriteToggle}
-        showFavorite={!!user && !isOwner}
+        showFavorite={!!user}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
