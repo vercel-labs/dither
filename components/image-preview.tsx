@@ -21,13 +21,6 @@ export function ImagePreview({ imageUrl }: ImagePreviewProps = {}) {
   // Use prop if provided, otherwise fall back to atom value
   const src = imageUrl !== undefined ? imageUrl : processedDataUrlFromAtom;
 
-  // DEBUG
-  console.log("[ImagePreview RENDER]", {
-    imageUrlProp: imageUrl?.slice(0, 50),
-    atomValue: processedDataUrlFromAtom?.slice(0, 50),
-    src: src?.slice(0, 50),
-  });
-
   // Reset loaded state when src changes, but check if already complete
   useEffect(() => {
     setImageLoaded(false);

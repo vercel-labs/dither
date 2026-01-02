@@ -3,11 +3,12 @@ import { dithers, users, favorites } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { DitherGallery } from "@/components/dither-gallery";
 import type { DitherItem } from "@/lib/types";
 
-async function getMyDithers(userId: string): Promise<DitherItem[]> {
+async function getMyDithersUncached(userId: string): Promise<DitherItem[]> {
   const results = await db
     .select({
       id: dithers.id,
@@ -30,7 +31,13 @@ async function getMyDithers(userId: string): Promise<DitherItem[]> {
   return results.filter((d) => d.imageUrl);
 }
 
-async function getFavoritedIds(userId: string): Promise<string[]> {
+const getMyDithers = (userId: string) =>
+  unstable_cache(() => getMyDithersUncached(userId), [`my-dithers-${userId}`], {
+    revalidate: 30,
+    tags: [`my-dithers-${userId}`],
+  })();
+
+async function getFavoritedIdsUncached(userId: string): Promise<string[]> {
   try {
     const results = await db
       .select({ ditherId: favorites.ditherId })
@@ -42,6 +49,13 @@ async function getFavoritedIds(userId: string): Promise<string[]> {
     return [];
   }
 }
+
+const getFavoritedIds = (userId: string) =>
+  unstable_cache(
+    () => getFavoritedIdsUncached(userId),
+    [`favorited-ids-${userId}`],
+    { revalidate: 30, tags: [`favorites-${userId}`] },
+  )();
 
 export default async function MyDithersPage() {
   const session = await auth.api.getSession({

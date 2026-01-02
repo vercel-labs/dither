@@ -101,39 +101,17 @@ export function DitherView({
   // Local state to prevent showing stale processedDataUrl from atom
   const [safeImageUrl, setSafeImageUrl] = useState<string | null>(null);
 
-  // DEBUG
-  console.log("[DitherView RENDER]", {
-    id,
-    initializedIdRef: initializedIdRef.current,
-    processedDitherId,
-    safeImageUrl: safeImageUrl?.slice(0, 50),
-    processedDataUrl: processedDataUrl?.slice(0, 50),
-  });
-
   // Reset image state when navigating to a new dither (useLayoutEffect to prevent flash)
   useLayoutEffect(() => {
-    console.log("[DitherView useLayoutEffect]", {
-      id,
-      initializedIdRef: initializedIdRef.current,
-      processedDitherId,
-      needsInit: initializedIdRef.current !== id,
-    });
     if (initializedIdRef.current !== id) {
       // Check if the current processedDataUrl is actually for THIS dither
       const isCurrentDataForThisDither = processedDitherId === id;
-      console.log(
-        "[DitherView] isCurrentDataForThisDither:",
-        isCurrentDataForThisDither,
-      );
 
       if (isCurrentDataForThisDither && processedDataUrl) {
         // The atom already has valid data for this dither, use it directly
-        console.log("[DitherView] Using existing valid data");
         setSafeImageUrl(processedDataUrl);
       } else {
         // Data is for a different dither, reset
-        // DON'T set processedDitherId here - wait for actual new data
-        console.log("[DitherView] Resetting - data is for different dither");
         setSafeImageUrl(null);
         resetImage();
       }
@@ -143,23 +121,11 @@ export function DitherView({
 
   // Update safe URL when processedDataUrl changes (only if it's for this dither)
   useEffect(() => {
-    console.log("[DitherView useEffect safeUrl]", {
-      id,
-      initializedIdRef: initializedIdRef.current,
-      processedDitherId,
-      processedDataUrl: processedDataUrl?.slice(0, 50),
-      checks: {
-        initMismatch: initializedIdRef.current !== id,
-        ditherIdMismatch: processedDitherId !== id,
-        noData: !processedDataUrl,
-      },
-    });
     if (initializedIdRef.current !== id) return;
     // Only accept data that's tagged for this dither
     if (processedDitherId !== id) return;
     if (!processedDataUrl) return;
 
-    console.log("[DitherView] Setting safeImageUrl");
     setSafeImageUrl(processedDataUrl);
   }, [id, processedDataUrl, processedDitherId]);
 
