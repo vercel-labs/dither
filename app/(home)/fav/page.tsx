@@ -3,12 +3,11 @@ import { dithers, users, favorites } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 import { DitherGallery } from "@/components/dither-gallery";
 import type { DitherItem } from "@/lib/types";
 
-async function getFavoritesUncached(
+async function getFavorites(
   userId: string,
 ): Promise<{ dithers: DitherItem[]; ids: string[] }> {
   try {
@@ -37,12 +36,6 @@ async function getFavoritesUncached(
     return { dithers: [], ids: [] };
   }
 }
-
-const getFavorites = (userId: string) =>
-  unstable_cache(() => getFavoritesUncached(userId), [`favorites-${userId}`], {
-    revalidate: 30,
-    tags: [`favorites-${userId}`],
-  })();
 
 export default async function FavoritesPage() {
   const session = await auth.api.getSession({

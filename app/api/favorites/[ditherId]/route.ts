@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { favorites } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
@@ -60,7 +60,8 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
 
     // Revalidate caches
-    revalidateTag(`favorites-${session.user.id}`);
+    revalidatePath("/");
+    revalidatePath("/fav");
 
     return NextResponse.json({ success: true });
   } catch (error) {
