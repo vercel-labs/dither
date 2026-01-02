@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
-import { ChevronDown, LogOut, Globe, Lock } from "lucide-react";
+import { ChevronDown, LogOut, Globe, Lock, Trash2 } from "lucide-react";
 import type { Visibility } from "@/lib/db/schema";
 
 // Animated dither loading indicator - sparkling effect
@@ -186,6 +186,8 @@ interface HeaderProps {
   isOwner?: boolean;
   isUpdatingVisibility?: boolean;
   onVisibilityChange?: (visibility: Visibility) => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 export function Header({
@@ -194,6 +196,8 @@ export function Header({
   isOwner,
   isUpdatingVisibility,
   onVisibilityChange,
+  onDelete,
+  isDeleting,
 }: HeaderProps = {}) {
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
@@ -305,6 +309,20 @@ export function Header({
                   )}
                 </div>
               )}
+            </>
+          )}
+          {isOwner && onDelete && (
+            <>
+              <span className="text-black/20">·</span>
+              <button
+                onClick={onDelete}
+                disabled={isDeleting}
+                className="flex items-center gap-1 text-[10px] text-red-500/70 hover:text-red-600 transition-colors disabled:opacity-50"
+                title="Delete"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+              </button>
             </>
           )}
         </div>

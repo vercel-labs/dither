@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { applyDither } from "@/lib/dither";
 import type { DitherOptions } from "@/lib/dither";
@@ -16,6 +17,16 @@ import {
 import { Header } from "@/components/header";
 import { ImagePreview } from "@/components/image-preview";
 import { ControlsPanel } from "@/components/controls-panel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getOriginalImageUrl } from "@/lib/url";
 import type { Visibility } from "@/lib/db/schema";
 
@@ -38,6 +49,8 @@ export function DitherView({
   isOwner,
   savedSettings,
 }: DitherViewProps) {
+  const router = useRouter();
+
   // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
   const setOriginalDataUrl = useSetAtom(originalDataUrlAtom);
@@ -50,6 +63,8 @@ export function DitherView({
   // Visibility state
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -181,6 +196,33 @@ export function DitherView({
     [id, isOwner, isUpdatingVisibility],
   );
 
+  const handleDeleteClick = useCallback(() => {
+    if (!isOwner || isDeleting) return;
+    setShowDeleteDialog(true);
+  }, [isOwner, isDeleting]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!isOwner || isDeleting) return;
+
+    setIsDeleting(true);
+    setShowDeleteDialog(false);
+    try {
+      const response = await fetch(`/api/dithers/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        router.push("/");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete");
+      }
+    } catch (error) {
+      console.error("Error deleting dither:", error);
+      setIsDeleting(false);
+    }
+  }, [id, isOwner, isDeleting, router]);
+
   // Keyboard shortcut: Cmd+S / Ctrl+S to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -204,7 +246,30 @@ export function DitherView({
         isOwner={isOwner}
         isUpdatingVisibility={isUpdatingVisibility}
         onVisibilityChange={handleVisibilityChange}
+        onDelete={handleDeleteClick}
+        isDeleting={isDeleting}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="font-serif">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this dither?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              dither.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-xs"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         {/* Main Panel */}

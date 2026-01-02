@@ -132,3 +132,40 @@ export async function GET(request: Request, { params }: RouteParams) {
     );
   }
 }
+
+export async function DELETE(request: Request, { params }: RouteParams) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Delete the dither (only if owned by user)
+    const [deleted] = await db
+      .delete(dithers)
+      .where(and(eq(dithers.id, id), eq(dithers.userId, session.user.id)))
+      .returning();
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Dither not found or not authorized" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting dither:", error);
+    return NextResponse.json(
+      {
+        error: `Failed to delete dither: ${error instanceof Error ? error.message : "Unknown error"}`,
+      },
+      { status: 500 },
+    );
+  }
+}
