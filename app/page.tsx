@@ -163,9 +163,9 @@ export default function Home() {
 
       <Header />
 
-      <main className="flex-1 min-h-0 max-h-[80vh] overflow-y-auto">
+      <main className="flex-1 min-h-0 overflow-y-auto">
         {/* Upload/Generate Area */}
-        <div className="flex items-center justify-center p-4 sm:p-8 pt-8 sm:pt-12">
+        <div className="flex items-center justify-center p-4 sm:p-8 pt-8 sm:pt-12 max-h-[80vh]">
           <div className="w-full max-w-lg flex flex-col items-center">
             <ModeToggle />
 
