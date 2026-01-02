@@ -29,7 +29,7 @@ export function DownloadDialog({
   onOpenChange,
   onDownload,
 }: DownloadDialogProps) {
-  const [format, setFormat] = useState<DownloadFormat>("png");
+  const [format, setFormat] = useState<DownloadFormat>("gif");
   const [transparent, setTransparent] = useState(false);
 
   const handleDownload = useCallback(() => {
@@ -54,16 +54,6 @@ export function DownloadDialog({
             </label>
             <div className="flex gap-2">
               <button
-                onClick={() => setFormat("png")}
-                className={`flex-1 font-mono text-[10px] py-2 border ${
-                  format === "png"
-                    ? "bg-black text-white border-black"
-                    : "bg-transparent text-black border-black/20 hover:border-black/40"
-                }`}
-              >
-                PNG
-              </button>
-              <button
                 onClick={() => {
                   setFormat("gif");
                   setTransparent(false);
@@ -75,6 +65,16 @@ export function DownloadDialog({
                 }`}
               >
                 GIF
+              </button>
+              <button
+                onClick={() => setFormat("png")}
+                className={`flex-1 font-mono text-[10px] py-2 border ${
+                  format === "png"
+                    ? "bg-black text-white border-black"
+                    : "bg-transparent text-black border-black/20 hover:border-black/40"
+                }`}
+              >
+                PNG
               </button>
             </div>
           </div>

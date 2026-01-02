@@ -9,6 +9,11 @@ import {
   currentUserCustomAvatarAtom,
 } from "@/lib/atoms";
 import type { DitherItem } from "@/lib/types";
+import {
+  DownloadDialog,
+  type DownloadOptions,
+} from "@/components/download-dialog";
+import { downloadImageFromUrl } from "@/lib/download";
 
 // 8x7 pixel heart pattern
 const HEART_PATTERN = [
@@ -296,12 +301,28 @@ function DitherCard({
 }) {
   const currentUserId = useAtomValue(currentUserIdAtom);
   const currentUserCustomAvatar = useAtomValue(currentUserCustomAvatarAtom);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
 
   // Use the global custom avatar for the current user's dithers
   const customAvatar =
     dither.userId === currentUserId
       ? currentUserCustomAvatar
       : dither.userCustomAvatar;
+
+  const handleDownloadClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDownloadDialog(true);
+  }, []);
+
+  const handleDownload = useCallback(
+    async (options: DownloadOptions) => {
+      if (!dither.imageUrl) return;
+      const filename = dither.title || `dither-${dither.id}`;
+      await downloadImageFromUrl(dither.imageUrl, filename, options);
+    },
+    [dither.imageUrl, dither.title, dither.id],
+  );
 
   return (
     <div className="flex flex-col">
@@ -337,15 +358,13 @@ function DitherCard({
         )}
 
         {dither.imageUrl && (
-          <a
-            href={dither.imageUrl}
-            download={`${dither.title || "dither"}.png`}
-            className="opacity-30"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={handleDownloadClick}
+            className="opacity-30 hover:opacity-60"
             title="Download"
           >
             <PixelIcon pattern={DOWNLOAD_PATTERN} size={10} />
-          </a>
+          </button>
         )}
 
         <FavoriteButton ditherId={dither.id} initialFavorited={isFavorited} />
@@ -366,6 +385,12 @@ function DitherCard({
           />
         )}
       </Link>
+
+      <DownloadDialog
+        open={showDownloadDialog}
+        onOpenChange={setShowDownloadDialog}
+        onDownload={handleDownload}
+      />
     </div>
   );
 }
