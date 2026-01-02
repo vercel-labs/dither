@@ -50,6 +50,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       threshold: string;
       contrast: string;
       brightness: string;
+      title: string;
     }> = {};
 
     if (body.visibility !== undefined) {
@@ -94,6 +95,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
     if (body.brightness !== undefined) {
       updates.brightness = String(body.brightness);
+    }
+
+    // Handle title update
+    if (body.title !== undefined) {
+      updates.title = String(body.title).slice(0, 100); // Limit title length
     }
 
     if (Object.keys(updates).length === 0) {

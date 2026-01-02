@@ -33,7 +33,7 @@ export async function generateMetadata({
     };
   }
 
-  const title = dither.title || "Dither";
+  const title = (dither.title || "Dither").toUpperCase();
 
   return {
     title,

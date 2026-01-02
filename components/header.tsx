@@ -59,6 +59,17 @@ const TRASH_PATTERN = [
   [0, 1, 1, 1, 1, 1, 0],
 ];
 
+// 7x7 pixel pencil/edit pattern
+const PENCIL_PATTERN = [
+  [0, 0, 0, 0, 0, 1, 1],
+  [0, 0, 0, 0, 1, 1, 1],
+  [0, 0, 0, 1, 1, 1, 0],
+  [0, 0, 1, 1, 1, 0, 0],
+  [0, 1, 1, 1, 0, 0, 0],
+  [1, 1, 1, 0, 0, 0, 0],
+  [1, 1, 0, 0, 0, 0, 0],
+];
+
 function PixelIcon({
   pattern,
   size = 12,
@@ -298,7 +309,8 @@ export function Header() {
     showFavorite,
   } = headerState;
 
-  const { onVisibilityChange, onDelete, onFavoriteToggle } = headerCallbacks;
+  const { onVisibilityChange, onDelete, onFavoriteToggle, onTitleEdit } =
+    headerCallbacks;
   const [initialUser, setUser] = useAtom(userAtom);
   const providers = useAtomValue(providersAtom);
   const setCurrentUserId = useSetAtom(currentUserIdAtom);
@@ -315,6 +327,9 @@ export function Header() {
     brightness: number;
   } | null>(null);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const setCustomAvatar = useCallback(
     (avatar: string | null) => {
@@ -435,12 +450,55 @@ export function Header() {
             <a href="/" className="font-mono text-xs tracking-wider">
               DITHER
             </a>
-            {title !== undefined && (
+            {visibility && (
               <>
                 <span className="text-black/20">/</span>
-                <span className="font-mono text-xs text-black/60 truncate max-w-[200px]">
-                  {title?.toUpperCase() || "UNTITLED"}
-                </span>
+                {isEditingTitle ? (
+                  <input
+                    ref={titleInputRef}
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={() => {
+                      if (onTitleEdit && editedTitle !== title) {
+                        onTitleEdit(editedTitle);
+                      }
+                      setIsEditingTitle(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (onTitleEdit && editedTitle !== title) {
+                          onTitleEdit(editedTitle);
+                        }
+                        setIsEditingTitle(false);
+                      } else if (e.key === "Escape") {
+                        setEditedTitle(title || "");
+                        setIsEditingTitle(false);
+                      }
+                    }}
+                    className="font-mono text-xs text-black/60 bg-transparent border-b border-black/40 outline-none max-w-[200px] uppercase"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="group flex items-center gap-1.5">
+                    <span className="font-mono text-xs text-black/60 truncate max-w-[200px]">
+                      {title?.toUpperCase() || "UNTITLED"}
+                    </span>
+                    {onTitleEdit && isOwner && (
+                      <button
+                        onClick={() => {
+                          setEditedTitle(title || "");
+                          setIsEditingTitle(true);
+                          setTimeout(() => titleInputRef.current?.select(), 0);
+                        }}
+                        className="text-black/30 hover:text-black sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                        title="Edit title"
+                      >
+                        <PixelIcon pattern={PENCIL_PATTERN} size={10} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -71,6 +71,7 @@ export async function GET(request: Request, { params }: RouteParams) {
           process.cwd(),
           "public",
           "uploads",
+          "dithers",
           localFilename,
         );
         const fileBuffer = await readFile(filePath);

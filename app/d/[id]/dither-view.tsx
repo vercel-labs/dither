@@ -217,6 +217,34 @@ export function DitherView({
     }
   }, [id, user, isFavorited]);
 
+  const handleTitleEdit = useCallback(
+    async (newTitle: string) => {
+      if (!isOwner) return;
+
+      // Optimistically update
+      setTitle(newTitle);
+
+      try {
+        const response = await fetch(`/api/dithers/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newTitle }),
+        });
+
+        if (!response.ok) {
+          // Revert on error
+          setTitle(title);
+          console.error("Error updating title");
+        }
+      } catch (error) {
+        // Revert on error
+        setTitle(title);
+        console.error("Error updating title:", error);
+      }
+    },
+    [id, isOwner, title],
+  );
+
   const handleVisibilityChange = useCallback(
     async (newVisibility: Visibility) => {
       if (!isOwner || isUpdatingVisibility) return;
@@ -252,11 +280,13 @@ export function DitherView({
       onVisibilityChange: handleVisibilityChange,
       onDelete: handleDeleteClick,
       onFavoriteToggle: handleFavoriteToggle,
+      onTitleEdit: handleTitleEdit,
     });
   }, [
     handleVisibilityChange,
     handleDeleteClick,
     handleFavoriteToggle,
+    handleTitleEdit,
     setHeaderCallbacks,
   ]);
 

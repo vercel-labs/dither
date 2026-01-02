@@ -147,10 +147,12 @@ export const headerCallbacksAtom = atom<{
   onVisibilityChange: ((visibility: Visibility) => void) | null;
   onDelete: (() => void) | null;
   onFavoriteToggle: (() => void) | null;
+  onTitleEdit: ((newTitle: string) => void) | null;
 }>({
   onVisibilityChange: null,
   onDelete: null,
   onFavoriteToggle: null,
+  onTitleEdit: null,
 });
 
 // Reset header to default state (used when navigating away from pages with header content)
@@ -160,6 +162,7 @@ export const resetHeaderAtom = atom(null, (get, set) => {
     onVisibilityChange: null,
     onDelete: null,
     onFavoriteToggle: null,
+    onTitleEdit: null,
   });
 });
 
