@@ -325,9 +325,6 @@ export function DitherView({
     if (!originalImage || status !== "ready") return;
     // Guard: don't process if originalImage is from a different dither
     if (!isOriginalImageForCurrentDither()) {
-      console.log(
-        "[DitherView] Skipping processImage - originalImage is stale",
-      );
       return;
     }
 
@@ -353,9 +350,6 @@ export function DitherView({
     }
     // Guard: don't process if originalImage is from a different dither
     if (!isOriginalImageForCurrentDither()) {
-      console.log(
-        "[DitherView] Skipping processImage (options change) - originalImage is stale",
-      );
       return;
     }
     if (originalImage && status === "ready") {

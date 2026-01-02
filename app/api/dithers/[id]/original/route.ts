@@ -12,11 +12,22 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+// Valid ID pattern (alphanumeric only, matching nanoid output)
+const VALID_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+
+function isValidId(id: string): boolean {
+  return typeof id === "string" && id.length > 0 && VALID_ID_PATTERN.test(id);
+}
+
 const isVercelBlobConfigured = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
+
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
 
     // Check if dither exists and user has access
     const dither = await db.query.dithers.findFirst({

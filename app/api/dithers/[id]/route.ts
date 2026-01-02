@@ -11,6 +11,13 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+// Valid ID pattern (alphanumeric only, matching nanoid output)
+const VALID_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+
+function isValidId(id: string): boolean {
+  return typeof id === "string" && id.length > 0 && VALID_ID_PATTERN.test(id);
+}
+
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const session = await auth.api.getSession({
@@ -22,6 +29,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
+
     const body = await request.json();
 
     // Build update object from allowed fields
@@ -94,9 +106,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   } catch (error) {
     console.error("Error updating dither:", error);
     return NextResponse.json(
-      {
-        error: `Failed to update dither: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
+      { error: "Failed to update dither" },
       { status: 500 },
     );
   }
@@ -105,6 +115,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
+
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
 
     const dither = await db.query.dithers.findFirst({
       where: eq(dithers.id, id),
@@ -150,6 +164,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
 
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
+
     // Delete the dither (only if owned by user)
     const [deleted] = await db
       .delete(dithers)
@@ -171,9 +189,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   } catch (error) {
     console.error("Error deleting dither:", error);
     return NextResponse.json(
-      {
-        error: `Failed to delete dither: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
+      { error: "Failed to delete dither" },
       { status: 500 },
     );
   }

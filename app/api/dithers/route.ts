@@ -27,6 +27,14 @@ const UNLIMITED_USER_IDS = new Set(
     .filter(Boolean),
 );
 
+// Valid ID pattern (alphanumeric only, matching nanoid output)
+// Prevents path traversal attacks when ID is used in filenames
+const VALID_ID_PATTERN = /^[a-zA-Z0-9]+$/;
+
+function isValidId(id: string): boolean {
+  return typeof id === "string" && id.length > 0 && VALID_ID_PATTERN.test(id);
+}
+
 async function getUserDailyGenerationCount(userId: string): Promise<number> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -75,12 +83,7 @@ async function generateAndProcessImage(
       .set({ title, updatedAt: new Date() })
       .where(eq(dithers.id, id));
 
-    console.log(`[${id}] Title generated: "${title}"`);
-
     const enhancedPrompt = prompt.trim() + STYLE_SUFFIX;
-    console.log(
-      `[${id}] Generating image for prompt: "${enhancedPrompt}" using model: ${modelId}`,
-    );
 
     let imageUrl: string;
 
@@ -113,8 +116,6 @@ async function generateAndProcessImage(
       }
     }
 
-    console.log(`[${id}] Image generation completed, uploading original...`);
-
     // Upload only the original image (dithering happens client-side)
     // The dithered version will be saved when the client first views it
     await uploadImage(imageUrl, `${id}-original.png`);
@@ -127,8 +128,6 @@ async function generateAndProcessImage(
         updatedAt: new Date(),
       })
       .where(eq(dithers.id, id));
-
-    console.log(`[${id}] Dither ready`);
   } catch (error) {
     console.error(`[${id}] Error generating image:`, error);
 
@@ -166,8 +165,11 @@ export async function POST(request: Request) {
       // Create a pending dither and start background generation
       const { id, prompt, modelId, visibility = "private" } = body;
 
-      if (!id) {
-        return NextResponse.json({ error: "ID is required" }, { status: 400 });
+      if (!isValidId(id)) {
+        return NextResponse.json(
+          { error: "Invalid ID format" },
+          { status: 400 },
+        );
       }
 
       // Check daily generation limit (unless user has unlimited)
@@ -220,8 +222,8 @@ export async function POST(request: Request) {
     // Legacy save request - for uploaded images
     const { id, prompt, originalImageData, processedImageData } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
     if (!originalImageData || !processedImageData) {
@@ -271,9 +273,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating dither:", error);
     return NextResponse.json(
-      {
-        error: `Failed to create dither: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
+      { error: "Failed to create dither" },
       { status: 500 },
     );
   }
