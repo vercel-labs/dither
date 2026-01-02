@@ -14,6 +14,30 @@ CREATE TABLE "accounts" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "dithers" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"title" text,
+	"prompt" text,
+	"model_id" text,
+	"image_url" text,
+	"threshold" text DEFAULT '255' NOT NULL,
+	"contrast" text DEFAULT '2' NOT NULL,
+	"brightness" text DEFAULT '75' NOT NULL,
+	"visibility" text DEFAULT 'private' NOT NULL,
+	"status" text DEFAULT 'ready' NOT NULL,
+	"error_message" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "favorites" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"dither_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp NOT NULL,
@@ -32,6 +56,10 @@ CREATE TABLE "users" (
 	"email" text,
 	"email_verified" boolean DEFAULT false NOT NULL,
 	"image" text,
+	"custom_avatar" text,
+	"avatar_threshold" text,
+	"avatar_contrast" text,
+	"avatar_brightness" text,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
@@ -47,4 +75,7 @@ CREATE TABLE "verifications" (
 );
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "dithers" ADD CONSTRAINT "dithers_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "favorites" ADD CONSTRAINT "favorites_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "favorites" ADD CONSTRAINT "favorites_dither_id_dithers_id_fk" FOREIGN KEY ("dither_id") REFERENCES "public"."dithers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

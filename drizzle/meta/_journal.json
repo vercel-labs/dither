@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1767282736414,
-      "tag": "0000_absurd_james_howlett",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1767290354971,
-      "tag": "0001_dazzling_echo",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1767290793391,
-      "tag": "0002_aromatic_menace",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767290913835,
-      "tag": "0003_solid_iceman",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767332017799,
-      "tag": "0004_new_red_skull",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767334847449,
-      "tag": "0005_purple_winter_soldier",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1767335102409,
-      "tag": "0006_bored_mongoose",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1767376369129,
-      "tag": "0007_gigantic_firebird",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1767384223051,
-      "tag": "0008_redundant_skaar",
+      "when": 1767390719411,
+      "tag": "0000_lean_doctor_faustus",
       "breakpoints": true
     }
   ]

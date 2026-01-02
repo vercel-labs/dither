@@ -1,1 +1,0 @@
-ALTER TABLE "dithers" ADD COLUMN "title" text;
