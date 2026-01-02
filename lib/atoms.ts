@@ -97,6 +97,12 @@ export const generatePromptAtom = atomWithStorage<string>(
   "",
   createCookieStorage<string>(),
 );
+export type GenerateVisibility = "public" | "private";
+export const generateVisibilityAtom = atomWithStorage<GenerateVisibility>(
+  "generate-visibility",
+  "public",
+  createCookieStorage<GenerateVisibility>(),
+);
 export const isGeneratingAtom = atom(false);
 export const generateErrorAtom = atom<string | null>(null);
 

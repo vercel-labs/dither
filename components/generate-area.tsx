@@ -7,6 +7,7 @@ import {
   aiModels,
   selectedModelAtom,
   generatePromptAtom,
+  generateVisibilityAtom,
   isGeneratingAtom,
   generateErrorAtom,
   userAtom,
@@ -24,11 +25,11 @@ interface GenerateAreaProps {
 export function GenerateArea({ onGenerate }: GenerateAreaProps) {
   const [prompt, setPrompt] = useAtom(generatePromptAtom);
   const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom);
+  const [visibility, setVisibility] = useAtom(generateVisibilityAtom);
   const [isGenerating] = useAtom(isGeneratingAtom);
   const [error, setError] = useAtom(generateErrorAtom);
   const [showModels, setShowModels] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const user = useAtomValue(userAtom);
   const providers = useAtomValue(providersAtom);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
