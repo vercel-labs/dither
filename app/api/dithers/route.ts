@@ -118,7 +118,7 @@ async function generateAndProcessImage(
 
     // Upload only the original image (dithering happens client-side)
     // The dithered version will be saved when the client first views it
-    await uploadImage(imageUrl, `${id}-original.png`);
+    await uploadImage(imageUrl, `dithers/${id}-original.png`);
 
     // Update the dither record - imageUrl stays null until client saves dithered version
     await db
@@ -234,11 +234,11 @@ export async function POST(request: Request) {
     }
 
     // Upload both images to storage
-    // Original: {id}-original.png, Processed: {id}-{hash}-dither.png
+    // Original: dithers/{id}-original.png, Processed: dithers/{id}-{hash}-dither.png
     const hash = Date.now().toString(36);
     const [, imageUrl] = await Promise.all([
-      uploadImage(originalImageData, `${id}-original.png`),
-      uploadImage(processedImageData, `${id}-${hash}-dither.png`),
+      uploadImage(originalImageData, `dithers/${id}-original.png`),
+      uploadImage(processedImageData, `dithers/${id}-${hash}-dither.png`),
     ]);
 
     // Generate title based on whether we have a prompt (generated) or not (uploaded)

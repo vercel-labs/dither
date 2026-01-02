@@ -76,11 +76,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         await deleteImage(existingDither.imageUrl);
       }
 
-      // Upload new processed image: {id}-{hash}-dither.png
+      // Upload new processed image: dithers/{id}-{hash}-dither.png
       const hash = generateHash();
       const imageUrl = await uploadImage(
         body.imageData,
-        `${id}-${hash}-dither.png`,
+        `dithers/${id}-${hash}-dither.png`,
       );
       updates.imageUrl = imageUrl;
     }
