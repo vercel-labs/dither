@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { userAtom, providersAtom } from "@/lib/atoms";
+import { AvatarEditor } from "./avatar-editor";
 import type { Visibility } from "@/lib/db/schema";
 
 function DitherLoader({ size = 24 }: { size?: number }) {
@@ -55,12 +56,43 @@ function DitherLoader({ size = 24 }: { size?: number }) {
   );
 }
 
-function DitheredAvatar({ src, size = 24 }: { src: string; size?: number }) {
+function DitheredAvatar({
+  src,
+  customSrc,
+  size = 24,
+}: {
+  src: string;
+  customSrc?: string | null;
+  size?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const applyDither = useCallback(
-    (img: HTMLImageElement) => {
+  // If we have a custom dithered avatar, just display it
+  useEffect(() => {
+    if (customSrc) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const internalSize = size * 2;
+        canvas.width = internalSize;
+        canvas.height = internalSize;
+        ctx.drawImage(img, 0, 0, internalSize, internalSize);
+        setLoaded(true);
+      };
+      img.src = customSrc;
+      return;
+    }
+
+    // Otherwise apply default dithering
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -114,16 +146,9 @@ function DitheredAvatar({ src, size = 24 }: { src: string; size?: number }) {
 
       ctx.putImageData(imageData, 0, 0);
       setLoaded(true);
-    },
-    [size],
-  );
-
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => applyDither(img);
+    };
     img.src = src;
-  }, [src, applyDither]);
+  }, [src, customSrc, size]);
 
   return (
     <canvas
@@ -172,10 +197,20 @@ export function Header({
   const [signingIn, setSigningIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
 
   const user = session?.user ?? initialUser;
   const isSignedIn = !!user;
   const isLoading = signingIn || (isPending && !initialUser);
+
+  // Load custom avatar from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dither-avatar");
+      if (saved) setCustomAvatar(saved);
+    }
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -198,6 +233,18 @@ export function Header({
     setUser(null);
   };
 
+  const handleAvatarSave = useCallback((dataUrl: string) => {
+    setCustomAvatar(dataUrl);
+    localStorage.setItem("dither-avatar", dataUrl);
+    setShowAvatarEditor(false);
+  }, []);
+
+  const handleResetAvatar = useCallback(() => {
+    setCustomAvatar(null);
+    localStorage.removeItem("dither-avatar");
+    setMenuOpen(false);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = () => {
       setMenuOpen(false);
@@ -210,144 +257,182 @@ export function Header({
   }, [menuOpen, providerMenuOpen]);
 
   return (
-    <header className="border-b border-black bg-[#fafafa]">
-      <div className="px-4 h-10 flex items-center justify-between">
-        {/* Left */}
-        <div className="flex items-center gap-4">
-          <a href="/" className="font-mono text-xs tracking-wider">
-            DITHER
-          </a>
-          {title !== undefined && (
-            <>
-              <span className="text-black/20">/</span>
-              <span className="font-mono text-xs text-black/60 truncate max-w-[200px]">
-                {title?.toUpperCase() || "UNTITLED"}
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Right */}
-        <div className="flex items-center gap-4">
-          {showFavorite && onFavoriteToggle && (
-            <button onClick={onFavoriteToggle} className="font-mono text-xs">
-              {isFavorited ? "★" : "☆"}
-            </button>
-          )}
-
-          {visibility && (
-            <div className="flex items-center gap-3">
-              {isOwner && onVisibilityChange ? (
-                <button
-                  onClick={() =>
-                    onVisibilityChange(
-                      visibility === "private" ? "public" : "private",
-                    )
-                  }
-                  disabled={isUpdatingVisibility}
-                  className="font-mono text-xs text-black/60 disabled:opacity-50"
-                >
-                  {visibility.toUpperCase()}
-                </button>
-              ) : (
-                <span className="font-mono text-xs text-black/40">
-                  {visibility.toUpperCase()}
+    <>
+      <header className="border-b border-black bg-[#fafafa]">
+        <div className="px-4 h-10 flex items-center justify-between">
+          {/* Left */}
+          <div className="flex items-center gap-4">
+            <a href="/" className="font-mono text-xs tracking-wider">
+              DITHER
+            </a>
+            {title !== undefined && (
+              <>
+                <span className="text-black/20">/</span>
+                <span className="font-mono text-xs text-black/60 truncate max-w-[200px]">
+                  {title?.toUpperCase() || "UNTITLED"}
                 </span>
-              )}
-              {isOwner && onDelete && (
-                <button
-                  onClick={onDelete}
-                  disabled={isDeleting}
-                  className="font-mono text-xs text-black/40 disabled:opacity-50"
-                >
-                  DELETE
-                </button>
-              )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
-          <a
-            href="https://github.com/vercel-labs/dither"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-black/40 hidden sm:block"
-          >
-            GITHUB
-          </a>
-
-          {isLoading ? (
-            <DitherLoader size={24} />
-          ) : isSignedIn ? (
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(!menuOpen);
-                }}
-              >
-                {user?.image ? (
-                  <DitheredAvatar src={user.image} size={24} />
-                ) : (
-                  <div className="w-6 h-6 bg-black text-white text-[10px] flex items-center justify-center font-mono">
-                    {user?.name?.charAt(0).toUpperCase() || "?"}
-                  </div>
-                )}
+          {/* Right */}
+          <div className="flex items-center gap-4">
+            {showFavorite && onFavoriteToggle && (
+              <button onClick={onFavoriteToggle} className="font-mono text-xs">
+                {isFavorited ? "★" : "☆"}
               </button>
+            )}
 
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
-                  <div className="px-3 py-2 border-b border-black/20">
-                    <p className="font-mono text-[10px] text-black/60 truncate">
-                      {user?.name?.toUpperCase()}
-                    </p>
-                  </div>
+            {visibility && (
+              <div className="flex items-center gap-3">
+                {isOwner && onVisibilityChange ? (
                   <button
-                    onClick={handleSignOut}
-                    className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
+                    onClick={() =>
+                      onVisibilityChange(
+                        visibility === "private" ? "public" : "private",
+                      )
+                    }
+                    disabled={isUpdatingVisibility}
+                    className="font-mono text-xs text-black/60 disabled:opacity-50"
                   >
-                    SIGN OUT
+                    {visibility.toUpperCase()}
                   </button>
-                </div>
-              )}
-            </div>
-          ) : providers.length > 0 ? (
-            providers.length === 1 ? (
-              <button
-                onClick={() => handleSignIn(providers[0])}
-                className="font-mono text-xs"
-              >
-                SIGN IN
-              </button>
-            ) : (
+                ) : (
+                  <span className="font-mono text-xs text-black/40">
+                    {visibility.toUpperCase()}
+                  </span>
+                )}
+                {isOwner && onDelete && (
+                  <button
+                    onClick={onDelete}
+                    disabled={isDeleting}
+                    className="font-mono text-xs text-black/40 disabled:opacity-50"
+                  >
+                    DELETE
+                  </button>
+                )}
+              </div>
+            )}
+
+            <a
+              href="https://github.com/vercel-labs/dither"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs text-black/40 hidden sm:block"
+            >
+              GITHUB
+            </a>
+
+            {isLoading ? (
+              <DitherLoader size={32} />
+            ) : isSignedIn ? (
               <div className="relative">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setProviderMenuOpen(!providerMenuOpen);
+                    setMenuOpen(!menuOpen);
                   }}
+                >
+                  {user?.image ? (
+                    <DitheredAvatar
+                      src={user.image}
+                      customSrc={customAvatar}
+                      size={32}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-black text-white text-xs flex items-center justify-center font-mono">
+                      {user?.name?.charAt(0).toUpperCase() || "?"}
+                    </div>
+                  )}
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
+                    <div className="px-3 py-2 border-b border-black/20">
+                      <p className="font-mono text-[10px] text-black/60 truncate">
+                        {user?.name?.toUpperCase()}
+                      </p>
+                    </div>
+                    {user?.image && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(false);
+                          setShowAvatarEditor(true);
+                        }}
+                        className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
+                      >
+                        EDIT AVATAR
+                      </button>
+                    )}
+                    {customAvatar && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetAvatar();
+                        }}
+                        className="w-full px-3 py-2 text-left font-mono text-xs text-black/50 hover:bg-black hover:text-white"
+                      >
+                        RESET AVATAR
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
+                    >
+                      SIGN OUT
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : providers.length > 0 ? (
+              providers.length === 1 ? (
+                <button
+                  onClick={() => handleSignIn(providers[0])}
                   className="font-mono text-xs"
                 >
                   SIGN IN
                 </button>
+              ) : (
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setProviderMenuOpen(!providerMenuOpen);
+                    }}
+                    className="font-mono text-xs"
+                  >
+                    SIGN IN
+                  </button>
 
-                {providerMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
-                    {providers.map((provider) => (
-                      <button
-                        key={provider}
-                        onClick={() => handleSignIn(provider)}
-                        className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
-                      >
-                        {PROVIDER_NAMES[provider] || provider.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          ) : null}
+                  {providerMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-[#fafafa] border border-black z-50">
+                      {providers.map((provider) => (
+                        <button
+                          key={provider}
+                          onClick={() => handleSignIn(provider)}
+                          className="w-full px-3 py-2 text-left font-mono text-xs hover:bg-black hover:text-white"
+                        >
+                          {PROVIDER_NAMES[provider] || provider.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            ) : null}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Avatar Editor Modal */}
+      {showAvatarEditor && user?.image && (
+        <AvatarEditor
+          src={user.image}
+          onClose={() => setShowAvatarEditor(false)}
+          onSave={handleAvatarSave}
+        />
+      )}
+    </>
   );
 }

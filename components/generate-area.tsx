@@ -71,7 +71,7 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
               onClick={() => setShowModels(!showModels)}
               className="font-mono text-[10px] text-black/50"
             >
-              MODEL: {selectedModelName.toUpperCase()}
+              {selectedModelName.toUpperCase()}
             </button>
 
             {showModels && (

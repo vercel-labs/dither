@@ -407,7 +407,7 @@ export function DitherView({
             </div>
           </div>
 
-          <ControlsPanel onSave={() => {}} onDownload={() => {}} />
+          {isOwner && <ControlsPanel onSave={() => {}} onDownload={() => {}} />}
         </main>
       </div>
     );
@@ -524,12 +524,14 @@ export function DitherView({
           <ImagePreview />
         </div>
 
-        <ControlsPanel
-          onSave={handleSave}
-          onDownload={handleDownload}
-          saveLabel="Save"
-          alwaysEnableSave={isOwner}
-        />
+        {isOwner && (
+          <ControlsPanel
+            onSave={handleSave}
+            onDownload={handleDownload}
+            saveLabel="Save"
+            alwaysEnableSave={isOwner}
+          />
+        )}
       </main>
     </div>
   );

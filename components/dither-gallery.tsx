@@ -1,5 +1,57 @@
+"use client";
+
 import Link from "next/link";
+import { useRef, useEffect, useState } from "react";
 import type { DitherItem } from "@/app/page";
+
+function SmallDitheredAvatar({ src }: { src: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const size = 32;
+      canvas.width = size;
+      canvas.height = size;
+
+      ctx.drawImage(img, 0, 0, size, size);
+
+      const imageData = ctx.getImageData(0, 0, size, size);
+      const data = imageData.data;
+
+      // Simple threshold dithering for small size
+      for (let i = 0; i < size * size; i++) {
+        const idx = i * 4;
+        const gray =
+          0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        const value = gray < 128 ? 0 : 255;
+        data[idx] = value;
+        data[idx + 1] = value;
+        data[idx + 2] = value;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      setLoaded(true);
+    };
+    img.src = src;
+  }, [src]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`border border-black ${loaded ? "opacity-100" : "opacity-0"}`}
+      style={{ width: 16, height: 16, imageRendering: "pixelated" }}
+    />
+  );
+}
 
 function DitherCard({
   dither,
@@ -13,9 +65,15 @@ function DitherCard({
       {/* Header row */}
       <div className="flex items-center gap-2 mb-1">
         {showUser && (
-          <div className="w-4 h-4 border border-black flex items-center justify-center bg-black text-white font-mono text-[8px]">
-            {dither.userName?.charAt(0).toUpperCase() || "?"}
-          </div>
+          <Link href={`/u/${dither.userId}`}>
+            {dither.userImage ? (
+              <SmallDitheredAvatar src={dither.userImage} />
+            ) : (
+              <div className="w-4 h-4 border border-black flex items-center justify-center bg-black text-white font-mono text-[8px]">
+                {dither.userName?.charAt(0).toUpperCase() || "?"}
+              </div>
+            )}
+          </Link>
         )}
 
         <Link
