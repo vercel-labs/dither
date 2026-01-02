@@ -56,6 +56,15 @@ export const verifications = pgTable("verifications", {
 export const VISIBILITY_OPTIONS = ["private", "public"] as const;
 export type Visibility = (typeof VISIBILITY_OPTIONS)[number];
 
+// Status options for dithers
+export const STATUS_OPTIONS = [
+  "pending",
+  "generating",
+  "ready",
+  "failed",
+] as const;
+export type DitherStatus = (typeof STATUS_OPTIONS)[number];
+
 // Application tables
 export const dithers = pgTable("dithers", {
   id: text("id")
@@ -66,6 +75,7 @@ export const dithers = pgTable("dithers", {
     .references(() => users.id),
   title: text("title"),
   prompt: text("prompt"),
+  modelId: text("model_id"), // AI model used for generation
   imageUrl: text("image_url"), // The processed/dithered version ({id}.png)
   // Original is stored as {id}-original.png
   // Dither settings
@@ -73,6 +83,8 @@ export const dithers = pgTable("dithers", {
   contrast: text("contrast").notNull().default("2"),
   brightness: text("brightness").notNull().default("75"),
   visibility: text("visibility").notNull().default("private"),
+  status: text("status").notNull().default("ready"), // pending, generating, ready, failed
+  errorMessage: text("error_message"), // Error message if generation failed
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

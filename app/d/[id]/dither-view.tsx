@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { applyDither } from "@/lib/dither";
 import type { DitherOptions } from "@/lib/dither";
 import {
@@ -28,28 +28,52 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getOriginalImageUrl } from "@/lib/url";
-import type { Visibility } from "@/lib/db/schema";
+import type { Visibility, DitherStatus } from "@/lib/db/schema";
 
 interface DitherViewProps {
   id: string;
-  imageUrl: string;
+  imageUrl: string | null;
   title: string | null;
   prompt: string | null;
   visibility: Visibility;
+  status: DitherStatus;
+  errorMessage?: string | null;
   isOwner: boolean;
   savedSettings: DitherOptions;
 }
 
+// Construct the original image URL from the dither ID
+function getOriginalUrlFromId(id: string): string {
+  // This assumes the storage URL pattern - adjust based on your storage setup
+  return `/api/dithers/${id}/original`;
+}
+
 export function DitherView({
   id,
-  imageUrl,
-  title,
+  imageUrl: initialImageUrl,
+  title: initialTitle,
   prompt: initialPrompt,
   visibility: initialVisibility,
+  status: initialStatus,
+  errorMessage: initialErrorMessage,
   isOwner,
   savedSettings,
 }: DitherViewProps) {
   const router = useRouter();
+
+  // Local state for polling
+  const [status, setStatus] = useState<DitherStatus>(initialStatus);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl);
+  const [title, setTitle] = useState<string | null>(initialTitle);
+  const [errorMessage, setErrorMessage] = useState<string | null | undefined>(
+    initialErrorMessage,
+  );
+
+  // Track if we need to auto-save (first time processing)
+  const needsAutoSaveRef = useRef(
+    !initialImageUrl && initialStatus === "ready",
+  );
+  const hasAutoSavedRef = useRef(false);
 
   // Atoms
   const [originalImage, setOriginalImage] = useAtom(originalImageAtom);
@@ -68,26 +92,77 @@ export function DitherView({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Load the saved image and settings on mount
+  // Poll for status when pending or generating
   useEffect(() => {
+    if (status === "ready" || status === "failed") return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/dithers/${id}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const dither = data.dither;
+
+        setStatus(dither.status);
+        setTitle(dither.title);
+        setErrorMessage(dither.errorMessage);
+
+        if (dither.status === "ready") {
+          // Generation is complete - we can now load the original and process it
+          if (dither.imageUrl) {
+            setImageUrl(dither.imageUrl);
+          } else {
+            // No imageUrl yet - we need to process on first view
+            needsAutoSaveRef.current = true;
+          }
+          clearInterval(pollInterval);
+        } else if (dither.status === "failed") {
+          clearInterval(pollInterval);
+        }
+      } catch (error) {
+        console.error("Error polling dither status:", error);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [id, status]);
+
+  // Load the image when ready
+  useEffect(() => {
+    if (status !== "ready") return;
+
     if (initialPrompt) setPrompt(initialPrompt);
 
     // Initialize with saved settings
     setOptions(savedSettings);
 
-    // Display the processed image immediately
-    setProcessedDataUrl(imageUrl);
+    // If we have an imageUrl, display it and load original for re-processing
+    if (imageUrl) {
+      setProcessedDataUrl(imageUrl);
+      const originalUrl = getOriginalImageUrl(imageUrl);
+      setOriginalDataUrl(originalUrl);
 
-    // Load the original image for re-processing
-    const originalUrl = getOriginalImageUrl(imageUrl);
-    setOriginalDataUrl(originalUrl);
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => setOriginalImage(img);
+      img.src = originalUrl;
+    } else {
+      // No imageUrl yet - load original directly and process it
+      // The original is stored at {id}-original.png
+      // We need to construct the URL based on your storage pattern
+      const originalUrl = getOriginalUrlFromId(id);
+      setOriginalDataUrl(originalUrl);
 
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => setOriginalImage(img);
-    img.src = originalUrl;
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => setOriginalImage(img);
+      img.src = originalUrl;
+    }
   }, [
+    status,
     imageUrl,
+    id,
     initialPrompt,
     savedSettings,
     setPrompt,
@@ -98,30 +173,78 @@ export function DitherView({
   ]);
 
   const processImage = useCallback(
-    (img: HTMLImageElement, opts: typeof options) => {
+    (img: HTMLImageElement, opts: typeof options): string | null => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) return null;
 
       setIsProcessing(true);
 
-      requestAnimationFrame(() => {
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return;
-
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const dithered = applyDither(imageData, opts);
-        ctx.putImageData(dithered, 0, 0);
-
-        setProcessedDataUrl(canvas.toDataURL("image/png"));
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) {
         setIsProcessing(false);
-      });
+        return null;
+      }
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const dithered = applyDither(imageData, opts);
+      ctx.putImageData(dithered, 0, 0);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      setProcessedDataUrl(dataUrl);
+      setIsProcessing(false);
+
+      return dataUrl;
     },
     [setIsProcessing, setProcessedDataUrl],
   );
+
+  // Auto-save after first processing when needed
+  const autoSave = useCallback(
+    async (dataUrl: string) => {
+      if (!isOwner || hasAutoSavedRef.current) return;
+      hasAutoSavedRef.current = true;
+
+      try {
+        const response = await fetch(`/api/dithers/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageData: dataUrl,
+            threshold: options.threshold,
+            contrast: options.contrast,
+            brightness: options.brightness,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.dither?.imageUrl) {
+            setImageUrl(data.dither.imageUrl);
+          }
+        }
+      } catch (error) {
+        console.error("Error auto-saving dither:", error);
+      }
+    },
+    [id, options, isOwner],
+  );
+
+  // Process image when original loads
+  useEffect(() => {
+    if (!originalImage || status !== "ready") return;
+
+    // Process the image
+    const dataUrl = processImage(originalImage, options);
+
+    // Auto-save if this is the first time (no imageUrl yet)
+    if (dataUrl && needsAutoSaveRef.current && !hasAutoSavedRef.current) {
+      autoSave(dataUrl);
+    }
+  }, [originalImage, status, options, processImage, autoSave]);
 
   // Re-process when options change (but not on initial load)
   const isInitialMount = useRef(true);
@@ -130,10 +253,10 @@ export function DitherView({
       isInitialMount.current = false;
       return;
     }
-    if (originalImage) {
+    if (originalImage && status === "ready") {
       processImage(originalImage, options);
     }
-  }, [options, originalImage, processImage]);
+  }, [options, originalImage, processImage, status]);
 
   const handleDownload = useCallback(() => {
     if (!processedDataUrl) return;
@@ -162,6 +285,11 @@ export function DitherView({
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Failed to save");
+      } else {
+        const data = await response.json();
+        if (data.dither?.imageUrl) {
+          setImageUrl(data.dither.imageUrl);
+        }
       }
     } catch (error) {
       console.error("Error saving dither:", error);
@@ -235,6 +363,121 @@ export function DitherView({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
+
+  // Show loading state while generating (with sidebar)
+  if (status === "pending" || status === "generating") {
+    return (
+      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+        <Header
+          title={null}
+          visibility={visibility}
+          isOwner={isOwner}
+          isUpdatingVisibility={false}
+          onVisibilityChange={() => {}}
+          onDelete={handleDeleteClick}
+          isDeleting={isDeleting}
+        />
+
+        <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+          {/* Main Panel - Loading State */}
+          <div className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-8 overflow-hidden">
+            <div className="text-center">
+              <div className="mb-6">
+                {/* Animated loading indicator */}
+                <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+              <h2 className="text-xl font-bold uppercase tracking-wider mb-2">
+                {status === "pending" ? "Starting..." : "Generating..."}
+              </h2>
+              {initialPrompt && (
+                <p className="text-sm text-black/60 max-w-md px-4">
+                  &ldquo;{initialPrompt}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Controls Panel - Disabled while generating */}
+          <ControlsPanel
+            onSave={() => {}}
+            onDownload={() => {}}
+            saveLabel="Save"
+            alwaysEnableSave={false}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state if generation failed
+  if (status === "failed") {
+    return (
+      <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">
+        <Header
+          title={null}
+          visibility={visibility}
+          isOwner={isOwner}
+          isUpdatingVisibility={false}
+          onVisibilityChange={() => {}}
+          onDelete={handleDeleteClick}
+          isDeleting={isDeleting}
+        />
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="font-serif">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this dither?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your
+                dither.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 hover:bg-red-700 text-xs"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <main className="flex-1 min-h-0 flex items-center justify-center">
+          <div className="text-center max-w-md px-4">
+            <div className="mb-6">
+              <div className="w-16 h-16 border-4 border-red-600 rounded-full flex items-center justify-center mx-auto">
+                <span className="text-2xl">✕</span>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold uppercase tracking-wider mb-2 text-red-600">
+              Generation Failed
+            </h2>
+            <p className="text-sm text-black/60 mb-6">
+              {errorMessage || "An unknown error occurred"}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => router.push("/")}
+                className="px-4 py-2 text-xs uppercase tracking-wider font-bold bg-black text-white hover:bg-black/80"
+              >
+                Try Again
+              </button>
+              {isOwner && (
+                <button
+                  onClick={handleDeleteClick}
+                  className="px-4 py-2 text-xs uppercase tracking-wider font-bold border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-[#fafafa] text-[#0a0a0a] font-serif selection:bg-black selection:text-white">

@@ -11,13 +11,13 @@ import {
 } from "@/lib/atoms";
 
 interface GenerateAreaProps {
-  onImageGenerated: (url: string, prompt?: string) => void;
+  onGenerate: (prompt: string, modelId: string) => void;
 }
 
-export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
+export function GenerateArea({ onGenerate }: GenerateAreaProps) {
   const [prompt, setPrompt] = useAtom(generatePromptAtom);
   const [selectedModel, setSelectedModel] = useAtom(selectedModelAtom);
-  const [isGenerating, setIsGenerating] = useAtom(isGeneratingAtom);
+  const [isGenerating] = useAtom(isGeneratingAtom);
   const [error, setError] = useAtom(generateErrorAtom);
   const [showModels, setShowModels] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -35,44 +35,12 @@ export function GenerateArea({ onImageGenerated }: GenerateAreaProps) {
     }
   }, [prompt]);
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt.trim()) return;
-
-    setIsGenerating(true);
+  const handleGenerate = useCallback(() => {
+    if (!prompt.trim() || isGenerating) return;
     setError(null);
-
-    try {
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: prompt.trim(), modelId: selectedModel }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to generate image");
-      }
-
-      const data = await response.json();
-      if (data.image?.url) {
-        onImageGenerated(data.image.url, prompt.trim());
-        setPrompt("");
-      } else {
-        throw new Error("No image returned");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate");
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [
-    prompt,
-    selectedModel,
-    onImageGenerated,
-    setIsGenerating,
-    setError,
-    setPrompt,
-  ]);
+    onGenerate(prompt.trim(), selectedModel);
+    setPrompt("");
+  }, [prompt, selectedModel, onGenerate, isGenerating, setError, setPrompt]);
 
   const selectedModelName =
     aiModels.find((m) => m.id === selectedModel)?.name || "Model";

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { dithers, type Visibility } from "@/lib/db/schema";
+import { dithers, type Visibility, type DitherStatus } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
@@ -20,9 +20,16 @@ export async function generateMetadata({
     where: eq(dithers.id, id),
   });
 
-  if (!dither || !dither.imageUrl) {
+  if (!dither) {
     return {
       title: "Dither Not Found",
+    };
+  }
+
+  // Handle pending/generating dithers
+  if (dither.status !== "ready" || !dither.imageUrl) {
+    return {
+      title: dither.status === "failed" ? "Generation Failed" : "Generating...",
     };
   }
 
@@ -59,7 +66,7 @@ export default async function DitherPage({ params }: DitherPageProps) {
     where: eq(dithers.id, id),
   });
 
-  if (!dither || !dither.imageUrl) {
+  if (!dither) {
     notFound();
   }
 
@@ -82,6 +89,8 @@ export default async function DitherPage({ params }: DitherPageProps) {
       title={dither.title}
       prompt={dither.prompt}
       visibility={dither.visibility as Visibility}
+      status={dither.status as DitherStatus}
+      errorMessage={dither.errorMessage}
       isOwner={isOwner}
       savedSettings={{
         threshold: Number(dither.threshold),

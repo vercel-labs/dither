@@ -43,6 +43,13 @@
       "when": 1767334847449,
       "tag": "0005_purple_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767335102409,
+      "tag": "0006_bored_mongoose",
+      "breakpoints": true
     }
   ]
 }

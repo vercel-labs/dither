@@ -10,6 +10,7 @@ interface DitherItem {
   title: string | null;
   imageUrl: string | null;
   visibility: string;
+  status: string;
   createdAt: string;
   userId: string;
   userName: string | null;
@@ -74,7 +75,7 @@ function GallerySection({
       {dithers.length === 0 ? (
         <p className="text-xs text-black/50">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {dithers.map((dither) => (
             <DitherCard key={dither.id} dither={dither} isOwn={isOwn} />
           ))}
