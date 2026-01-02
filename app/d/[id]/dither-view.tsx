@@ -16,6 +16,7 @@ import {
   originalImageAtom,
   originalDataUrlAtom,
   processedDataUrlAtom,
+  processedDitherIdAtom,
   ditherOptionsAtom,
   isProcessingAtom,
   isSavingAtom,
@@ -91,17 +92,76 @@ export function DitherView({
   const [isSaving, setIsSaving] = useAtom(isSavingAtom);
   const setPrompt = useSetAtom(promptAtom);
   const resetImage = useSetAtom(resetImageAtom);
+  const [processedDitherId, setProcessedDitherId] = useAtom(
+    processedDitherIdAtom,
+  );
 
   // Track which dither ID we've initialized for
-  const [initializedForId, setInitializedForId] = useState<string | null>(null);
+  const initializedIdRef = useRef<string | null>(null);
+  // Local state to prevent showing stale processedDataUrl from atom
+  const [safeImageUrl, setSafeImageUrl] = useState<string | null>(null);
+
+  // DEBUG
+  console.log("[DitherView RENDER]", {
+    id,
+    initializedIdRef: initializedIdRef.current,
+    processedDitherId,
+    safeImageUrl: safeImageUrl?.slice(0, 50),
+    processedDataUrl: processedDataUrl?.slice(0, 50),
+  });
 
   // Reset image state when navigating to a new dither (useLayoutEffect to prevent flash)
   useLayoutEffect(() => {
-    if (initializedForId !== id) {
-      resetImage();
-      setInitializedForId(id);
+    console.log("[DitherView useLayoutEffect]", {
+      id,
+      initializedIdRef: initializedIdRef.current,
+      processedDitherId,
+      needsInit: initializedIdRef.current !== id,
+    });
+    if (initializedIdRef.current !== id) {
+      // Check if the current processedDataUrl is actually for THIS dither
+      const isCurrentDataForThisDither = processedDitherId === id;
+      console.log(
+        "[DitherView] isCurrentDataForThisDither:",
+        isCurrentDataForThisDither,
+      );
+
+      if (isCurrentDataForThisDither && processedDataUrl) {
+        // The atom already has valid data for this dither, use it directly
+        console.log("[DitherView] Using existing valid data");
+        setSafeImageUrl(processedDataUrl);
+      } else {
+        // Data is for a different dither, reset
+        // DON'T set processedDitherId here - wait for actual new data
+        console.log("[DitherView] Resetting - data is for different dither");
+        setSafeImageUrl(null);
+        resetImage();
+      }
+      initializedIdRef.current = id;
     }
-  }, [id, initializedForId, resetImage]);
+  }, [id, resetImage, processedDataUrl, processedDitherId]);
+
+  // Update safe URL when processedDataUrl changes (only if it's for this dither)
+  useEffect(() => {
+    console.log("[DitherView useEffect safeUrl]", {
+      id,
+      initializedIdRef: initializedIdRef.current,
+      processedDitherId,
+      processedDataUrl: processedDataUrl?.slice(0, 50),
+      checks: {
+        initMismatch: initializedIdRef.current !== id,
+        ditherIdMismatch: processedDitherId !== id,
+        noData: !processedDataUrl,
+      },
+    });
+    if (initializedIdRef.current !== id) return;
+    // Only accept data that's tagged for this dither
+    if (processedDitherId !== id) return;
+    if (!processedDataUrl) return;
+
+    console.log("[DitherView] Setting safeImageUrl");
+    setSafeImageUrl(processedDataUrl);
+  }, [id, processedDataUrl, processedDitherId]);
 
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
@@ -193,6 +253,7 @@ export function DitherView({
 
     if (imageUrl) {
       setProcessedDataUrl(imageUrl);
+      setProcessedDitherId(id);
       const originalUrl = getOriginalImageUrl(imageUrl);
       setOriginalDataUrl(originalUrl);
 
@@ -218,6 +279,7 @@ export function DitherView({
     setPrompt,
     setOptions,
     setProcessedDataUrl,
+    setProcessedDitherId,
     setOriginalDataUrl,
     setOriginalImage,
   ]);
@@ -245,11 +307,12 @@ export function DitherView({
 
       const dataUrl = canvas.toDataURL("image/png");
       setProcessedDataUrl(dataUrl);
+      setProcessedDitherId(id);
       setIsProcessing(false);
 
       return dataUrl;
     },
-    [setIsProcessing, setProcessedDataUrl],
+    [id, setIsProcessing, setProcessedDataUrl, setProcessedDitherId],
   );
 
   const autoSave = useCallback(
@@ -282,15 +345,39 @@ export function DitherView({
     [id, options, isOwner],
   );
 
+  // Read originalDataUrl to check if originalImage is for current dither
+  const originalDataUrl = useAtomValue(originalDataUrlAtom);
+
+  // Helper to check if originalImage is for the current dither
+  const isOriginalImageForCurrentDither = useCallback(() => {
+    if (!originalDataUrl) return false;
+    // originalDataUrl contains the dither id, e.g. /api/dithers/ZA8TU.../original or /uploads/ZA8TU...
+    return originalDataUrl.includes(id);
+  }, [originalDataUrl, id]);
+
   useEffect(() => {
     if (!originalImage || status !== "ready") return;
+    // Guard: don't process if originalImage is from a different dither
+    if (!isOriginalImageForCurrentDither()) {
+      console.log(
+        "[DitherView] Skipping processImage - originalImage is stale",
+      );
+      return;
+    }
 
     const dataUrl = processImage(originalImage, options);
 
     if (dataUrl && needsAutoSaveRef.current && !hasAutoSavedRef.current) {
       autoSave(dataUrl);
     }
-  }, [originalImage, status, options, processImage, autoSave]);
+  }, [
+    originalImage,
+    status,
+    options,
+    processImage,
+    autoSave,
+    isOriginalImageForCurrentDither,
+  ]);
 
   const isInitialMount = useRef(true);
   useEffect(() => {
@@ -298,10 +385,23 @@ export function DitherView({
       isInitialMount.current = false;
       return;
     }
+    // Guard: don't process if originalImage is from a different dither
+    if (!isOriginalImageForCurrentDither()) {
+      console.log(
+        "[DitherView] Skipping processImage (options change) - originalImage is stale",
+      );
+      return;
+    }
     if (originalImage && status === "ready") {
       processImage(originalImage, options);
     }
-  }, [options, originalImage, processImage, status]);
+  }, [
+    options,
+    originalImage,
+    processImage,
+    status,
+    isOriginalImageForCurrentDither,
+  ]);
 
   const handleDownloadClick = useCallback(() => {
     if (!processedDataUrl) return;
@@ -723,7 +823,7 @@ export function DitherView({
 
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         <div className="flex-1 min-h-0 flex items-center justify-center p-4">
-          {initializedForId === id && <ImagePreview key={id} />}
+          <ImagePreview key={id} imageUrl={safeImageUrl} />
         </div>
 
         {isOwner && (

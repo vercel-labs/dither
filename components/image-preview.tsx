@@ -7,14 +7,26 @@ import { processedDataUrlAtom, isProcessingAtom } from "@/lib/atoms";
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 5;
 
-export function ImagePreview() {
-  const processedDataUrl = useAtomValue(processedDataUrlAtom);
+interface ImagePreviewProps {
+  /** Optional URL override - if provided, uses this instead of the atom value */
+  imageUrl?: string | null;
+}
+
+export function ImagePreview({ imageUrl }: ImagePreviewProps = {}) {
+  const processedDataUrlFromAtom = useAtomValue(processedDataUrlAtom);
   const isProcessing = useAtomValue(isProcessingAtom);
   const [imageLoaded, setImageLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Only show processed/dithered image, never the original
-  const src = processedDataUrl;
+  // Use prop if provided, otherwise fall back to atom value
+  const src = imageUrl !== undefined ? imageUrl : processedDataUrlFromAtom;
+
+  // DEBUG
+  console.log("[ImagePreview RENDER]", {
+    imageUrlProp: imageUrl?.slice(0, 50),
+    atomValue: processedDataUrlFromAtom?.slice(0, 50),
+    src: src?.slice(0, 50),
+  });
 
   // Reset loaded state when src changes, but check if already complete
   useEffect(() => {
@@ -273,34 +285,31 @@ export function ImagePreview() {
           </span>
         </div>
       )}
-      {!src && !isProcessing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-mono text-[10px] text-black/40 animate-blink">
-            LOADING...
-          </span>
-        </div>
+      {(!src || !imageLoaded) && !isProcessing && (
+        <div className="bg-black border border-black max-w-full max-h-[50vh] lg:max-h-[70vh] w-[50vh] lg:w-[70vh] aspect-square" />
       )}
-      {src && !imageLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-mono text-[10px] text-black/40 animate-blink">
-            LOADING...
-          </span>
-        </div>
-      )}
-      {src && (
+      {src && imageLoaded && (
         <img
           ref={imgRef}
           src={src}
           alt="Dithered"
-          className={`max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none border border-black transition-opacity ${
-            imageLoaded ? "opacity-100" : "opacity-0"
-          }`}
+          className="max-w-full max-h-[50vh] lg:max-h-[70vh] object-contain select-none pointer-events-none border border-black"
           draggable={false}
           onLoad={() => setImageLoaded(true)}
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             imageRendering: "pixelated",
           }}
+        />
+      )}
+      {/* Hidden image to trigger onLoad */}
+      {src && !imageLoaded && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt=""
+          className="absolute opacity-0 pointer-events-none"
+          onLoad={() => setImageLoaded(true)}
         />
       )}
       {zoom !== 1 && (

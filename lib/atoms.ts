@@ -27,6 +27,8 @@ export const currentUserCustomAvatarAtom = atom<string | null>(null);
 export const originalImageAtom = atom<HTMLImageElement | null>(null);
 export const originalDataUrlAtom = atom<string | null>(null);
 export const processedDataUrlAtom = atom<string | null>(null);
+// Track which dither the processedDataUrl belongs to
+export const processedDitherIdAtom = atom<string | null>(null);
 
 // Derived atom: has image (check original URL, original image element, or processed)
 export const hasImageAtom = atom(
@@ -121,6 +123,7 @@ export const resetImageAtom = atom(null, (get, set) => {
   set(originalImageAtom, null);
   set(originalDataUrlAtom, null);
   set(processedDataUrlAtom, null);
+  set(processedDitherIdAtom, null);
   set(ditherOptionsAtom, defaultOptions);
   set(promptAtom, null);
 });
