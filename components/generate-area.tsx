@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
+import { signIn } from "@/lib/auth-client";
 import {
   aiModels,
   selectedModelAtom,
   generatePromptAtom,
   isGeneratingAtom,
   generateErrorAtom,
+  userAtom,
+  providersAtom,
 } from "@/lib/atoms";
 
 interface GenerateAreaProps {
@@ -20,6 +23,9 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
   const [isGenerating] = useAtom(isGeneratingAtom);
   const [error, setError] = useAtom(generateErrorAtom);
   const [showModels, setShowModels] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
+  const user = useAtomValue(userAtom);
+  const providers = useAtomValue(providersAtom);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isInitialMount = useRef(true);
 
@@ -37,10 +43,29 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
 
   const handleGenerate = useCallback(() => {
     if (!prompt.trim() || isGenerating) return;
+
+    if (!user) {
+      setShowSignIn(true);
+      return;
+    }
+
     setError(null);
     onGenerate(prompt.trim(), selectedModel);
     setPrompt("");
-  }, [prompt, selectedModel, onGenerate, isGenerating, setError, setPrompt]);
+  }, [
+    prompt,
+    selectedModel,
+    onGenerate,
+    isGenerating,
+    setError,
+    setPrompt,
+    user,
+  ]);
+
+  const handleSignIn = (provider: string) => {
+    setShowSignIn(false);
+    signIn.social({ provider });
+  };
 
   const selectedModelName =
     aiModels.find((m) => m.id === selectedModel)?.name || "Model";
@@ -116,6 +141,41 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
         <div className="mt-2 font-mono text-[10px] text-black/60">
           ERROR: {error}
         </div>
+      )}
+
+      {/* Sign In Modal */}
+      {showSignIn && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setShowSignIn(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#fafafa] border border-black p-6 z-50 min-w-[280px]">
+            <div className="text-center mb-4">
+              <p className="font-mono text-xs mb-1">SIGN IN TO GENERATE</p>
+              <p className="font-mono text-[10px] text-black/50">
+                Create an account to start making dithers
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {providers.map((provider) => (
+                <button
+                  key={provider}
+                  onClick={() => handleSignIn(provider)}
+                  className="w-full px-4 py-2 font-mono text-xs bg-black text-white hover:bg-black/80"
+                >
+                  CONTINUE WITH {provider.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowSignIn(false)}
+              className="w-full mt-4 font-mono text-[10px] text-black/50"
+            >
+              CANCEL
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

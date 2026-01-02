@@ -8,9 +8,39 @@ import {
   generateTitleFromPrompt,
   generateTitleFromImage,
 } from "@/lib/generate-title";
-import { eq, or, desc } from "drizzle-orm";
+import { eq, or, desc, and, gte, sql } from "drizzle-orm";
 import { generateImage } from "ai";
 import { generateGeminiImageUrl } from "@/lib/gemini-image";
+
+// Daily generation limit (default: 10)
+const DAILY_GENERATION_LIMIT = parseInt(
+  process.env.DAILY_GENERATION_LIMIT || "10",
+  10,
+);
+
+// User IDs with unlimited generations (comma-separated)
+const UNLIMITED_USER_IDS = new Set(
+  (process.env.UNLIMITED_USER_IDS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean),
+);
+
+async function getUserDailyGenerationCount(userId: string): Promise<number> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(dithers)
+    .where(and(eq(dithers.userId, userId), gte(dithers.createdAt, today)));
+
+  return Number(result[0]?.count || 0);
+}
+
+function hasUnlimitedGenerations(userId: string): boolean {
+  return UNLIMITED_USER_IDS.has(userId);
+}
 
 // Style suffix to encourage dark backgrounds and no text for better dithering
 const STYLE_SUFFIX =
@@ -129,6 +159,22 @@ export async function POST(request: Request) {
 
       if (!id) {
         return NextResponse.json({ error: "ID is required" }, { status: 400 });
+      }
+
+      // Check daily generation limit (unless user has unlimited)
+      if (!hasUnlimitedGenerations(session.user.id)) {
+        const todayCount = await getUserDailyGenerationCount(session.user.id);
+        if (todayCount >= DAILY_GENERATION_LIMIT) {
+          return NextResponse.json(
+            {
+              error: `Daily limit reached. You can generate ${DAILY_GENERATION_LIMIT} images per day.`,
+              limitReached: true,
+              limit: DAILY_GENERATION_LIMIT,
+              used: todayCount,
+            },
+            { status: 429 },
+          );
+        }
       }
 
       // Create the pending dither record
