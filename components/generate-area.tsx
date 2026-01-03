@@ -190,6 +190,27 @@ export function GenerateArea({ onGenerate }: GenerateAreaProps) {
         </div>
       </div>
 
+      <div className="mt-2 font-mono text-[10px] text-black/40 text-center">
+        powered by{" "}
+        <a
+          href="https://ai-sdk.dev/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-black/60"
+        >
+          AI SDK
+        </a>{" "}
+        and{" "}
+        <a
+          href="https://vercel.com/ai-gateway"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-black/60"
+        >
+          AI Gateway
+        </a>
+      </div>
+
       {error && (
         <div className="mt-2 font-mono text-[10px] text-black/60">
           ERROR: {error}
